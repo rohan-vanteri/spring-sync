@@ -491,11 +491,14 @@ async function aiNarrate(events) {
       const t = ev.say && ev.say[id];
       if (t) items.push({id: i + ":" + id, text: t.replace(/^(⚑|🛡)\s*/u, "")});
     });
-    if (!items.length) return;
-    try {
-      const r = await aiPost("/narrate", {items, names}, 9000);
-      for (const m of r.messages || []) out[m.id] = m.text;
-    } catch {}
+    const chunks = [];
+    for (let k = 0; k < items.length; k += 10) chunks.push(items.slice(k, k + 10));   // worker takes up to 12
+    await Promise.all(chunks.map(async chunk => {
+      try {
+        const r = await aiPost("/narrate", {items: chunk, names}, 9000);
+        for (const m of r.messages || []) out[m.id] = m.text;
+      } catch {}
+    }));
   }));
   return out;
 }
