@@ -73,7 +73,7 @@ class Session:
             ev["probe"] = True
             yield ev
             if delivered and delivered["type"] == "REQUEST_INFO":
-                reply, esc = A.answer_request(B.id, delivered["payload"]["field"])
+                reply, esc = A.answer_request(B.id, delivered["payload"]["field"], names[B.id])
                 if esc:
                     yield esc
                 _, ev = self.send(reply)

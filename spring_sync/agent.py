@@ -88,14 +88,15 @@ class StudentAgent:
     def msg(self, to, mtype, payload=None, text=""):
         return {"from": self.id, "to": to, "type": mtype, "payload": payload or {}, "text": text}
 
-    def answer_request(self, to, field):
+    def answer_request(self, to, field, other_name=None):
         """Reply to REQUEST_INFO. Only shareable fields; everything else is refused
         and escalated to the student."""
         if field in SHAREABLE_FIELDS:
             return self.msg(to, "REFUSE", {"field": field},
                             "That's already part of our proposals."), None
         escalation = {"kind": "escalation", "student": self.id,
-                      "question": "The other agent asked for your %s. I didn't share it. "
+                      "question": "%s asked for your %s. I didn't share it. "
                                   "Nothing to do unless you want to tell them yourself."
-                                  % FIELD_LABELS.get(field, field.replace("_", " "))}
+                                  % ("%s's agent" % other_name if other_name else "The other agent",
+                                     FIELD_LABELS.get(field, field.replace("_", " ")))}
         return self.msg(to, "REFUSE", {"field": field}, "I can't share that."), escalation

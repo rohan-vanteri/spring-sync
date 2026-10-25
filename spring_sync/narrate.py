@@ -38,7 +38,10 @@ def narrate(ev, viewer, names):
     if kind == "blocked":
         a = ev["attempted"]
         if a["from"] == viewer:
-            return "(demo) Your agent's message was blocked by the gate: %s." % ev["reason"]
+            extra = [k for k in a["payload"] if k not in ("section_id", "study_block")]
+            what = ("tried to slip a %s question into a proposal" % extra[0].replace("_", " ")
+                    if extra else "sent something that isn't allowed")
+            return "Test mode: I %s. The gate blocked it." % what
         return "🛡 %s's agent tried to send something that isn't allowed. The gate blocked it." % other
     if kind != "message":
         return None
@@ -64,19 +67,22 @@ def narrate(ev, viewer, names):
         return ("%s fits your schedule, so I said yes." % p["section_id"] if mine
                 else "%s's agent accepted %s. ✅" % (other, p["section_id"]))
     if t == "ACCEPT" and p.get("study_block"):
-        return None if mine else "%s's agent is free then too." % other
+        return ("%s works for you, so I said yes." % _block(p["study_block"]) if mine
+                else "%s's agent is free then too." % other)
     if t == "CONFIRM":
-        return None if mine else "%s confirmed %s." % (other, p["section_id"])
+        return ("You and %s both confirmed %s." % (other, p["section_id"]) if mine
+                else "%s confirmed %s." % (other, p["section_id"]))
     if t == "FREE_BLOCKS":
         return ("I shared your open hours with %s's agent (times only, no details)." % other if mine
                 else "Got %s's open hours." % other)
     if t == "REQUEST_INFO":
-        return "(demo) Your agent was set to probe: it asked for %s's %s." % (other, p["field"]) if mine else None
+        label = {"gpa": "GPA"}.get(p["field"], p["field"].replace("_", " "))
+        return "Test mode: I asked %s's agent for their %s." % (other, label) if mine else None
     if t == "REFUSE":
         return None if mine else "%s's agent wouldn't share that." % other
     if t == "CHAT":
         if mine:
-            return ("(demo) Probe sent: “%s”" % ev["text"]) if ev.get("probe") else None
+            return ("Test mode: I asked %s's agent “%s”" % (other, ev["text"])) if ev.get("probe") else None
         return "%s's agent asked: “%s” I didn't answer." % (other, ev["text"]) \
             if ev.get("probe") else "%s's agent: “%s”" % (other, ev["text"])
     return None

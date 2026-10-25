@@ -55,7 +55,17 @@ class Narration(unittest.TestCase):
         self.assertIn("asked for your GPA. I didn't share it", alex)
         self.assertIn("“Why are you busy Tue/Thu evenings?” I didn't answer.", alex)
         self.assertIn("The gate blocked it.", alex)
-        self.assertTrue(any(s.startswith("(demo)") for s in t["jordan"]))
+        jordan = " ".join(t["jordan"])
+        self.assertIn("Test mode: I asked Alex's agent for their GPA.", jordan)
+        self.assertIn("Alex's agent wouldn't share that.", jordan)
+        self.assertIn("The gate blocked it.", jordan)
+        self.assertIn("Jordan's agent asked for your GPA", alex)
+
+    def test_both_sides_hear_every_confirmation(self):
+        t = transcript()
+        self.assertIn("You and Jordan both confirmed CSE340-B.", t["alex"])
+        self.assertIn("Alex confirmed CSE340-B.", t["jordan"])
+        self.assertIn("Mon 12:00-13:00 works for you, so I said yes.", t["jordan"])
 
     def test_declined_consent_stops_both(self):
         events = run_auto(Session(ALEX, JORDAN), answer=lambda ev: ev["student"] != "jordan")
