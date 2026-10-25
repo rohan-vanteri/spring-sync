@@ -88,6 +88,8 @@ python3 -m unittest discover -s tests -v
 
 53 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, the OpenAI request/response path (with a fake client), the per-student messages (each side hears only its own story; the other student's private data is never narrated), and the browser site (its engine copy matches `spring_sync/`, custom schedules negotiate without leaking, and bad form input gets a readable error).
 
+The AI worker has its own tests (`cd worker && npm test`, no key needed): schedule parsing is validated, and AI rewrites that drop or change a section, time, day, name or refusal are rejected.
+
 ## Layout
 
 ```
@@ -104,6 +106,7 @@ spring_sync/
 tests/
 docs/          static site: runs the engine in the browser (Pyodide); docs/py is copied by tools/build_site.py
 eval_results/  saved transcripts from the gpt-6-luna runs
+worker/        Cloudflare Worker that lets the site use AI without a key in the browser (see worker/README.md)
 ```
 
 All data is synthetic. Sections are not from ASU Class Search.

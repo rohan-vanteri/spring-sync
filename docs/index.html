@@ -114,6 +114,16 @@
   .warn { background:linear-gradient(90deg,var(--red),var(--pink)); color:#fff; box-shadow:0 8px 20px rgba(229,72,77,.25); }
   .plain { background:#fff; border:1px solid var(--line) !important; color:var(--ink); }
   .loading { color:var(--sub); font-size:14px; }
+  .aibadge { background:linear-gradient(90deg,#fff1d6,#f3e8ff); color:#7a3fd1; border-radius:999px; padding:6px 12px; font-size:13px; font-weight:700; }
+  .aibadge small { font-weight:500; color:var(--sub); margin-left:4px; }
+  .ai-intake { background:linear-gradient(135deg,#fffaf0,#f7f0ff); border:1px solid #e6d8ff; border-radius:14px; padding:4px 12px 12px; margin:10px 0 4px; }
+  .ai-intake label { color:#7a3fd1; }
+  .ai-intake textarea { min-height:58px; }
+  .ai-intake button { font:inherit; font-size:13.5px; font-weight:700; border:0; border-radius:999px; padding:7px 14px; margin-top:8px; cursor:pointer;
+                      background:linear-gradient(90deg,#a259ff,var(--indigo)); color:#fff; }
+  .ai-intake button:disabled { opacity:.55; cursor:wait; }
+  .ai-intake .ai-note { font-size:12px; color:var(--sub); margin-left:8px; }
+  .msg .aitag { display:block; font-size:10.5px; opacity:.55; margin-top:3px; font-weight:600; }
 
   .stats { display:flex; gap:8px; flex-wrap:wrap; margin:22px 0 4px; justify-content:center; }
   .stat { border-radius:999px; padding:6px 14px; font-size:14px; font-weight:700; }
@@ -389,6 +399,7 @@
         <button class="warn" id="b-adv" disabled onclick="start(true)">⚠ Run with a nosy agent</button>
         <button class="plain" id="b-reset" disabled onclick="fillForms(SAMPLES); setResult('')">Reset to sample students</button>
         <span class="loading" id="loading">Getting things ready…</span>
+        <span class="aibadge" id="ai-badge" hidden>✨ AI on<small>AI writes the texts. Code makes every decision, and the gate checks every message.</small></span>
       </div>
     </div>
 
@@ -439,6 +450,75 @@ const IDS = ["alex", "jordan"], DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"], CAMP
 const PY_FILES = ["__init__.py", "data.py", "gate.py", "agent.py", "session.py", "narrate.py", "runner.py"];
 let py, SAMPLES, ready = false, busy = false, runId = 0, passCount = 0, blockCount = 0;
 
+// AI wording comes from our Cloudflare Worker (it holds the OpenAI key; this page never does).
+// If it's missing or slow, everything still works with the built-in wording.
+const AI_URL_DEFAULT = "";
+const AI_URL = (() => {
+  const q = new URLSearchParams(location.search).get("ai");
+  return q && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(q) ? q : AI_URL_DEFAULT;
+})();
+let aiOn = false;
+
+async function aiPost(path, body, ms) {
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(AI_URL + path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body), signal: ctrl.signal});
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "AI unavailable");
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+async function aiCheck() {
+  if (!AI_URL) return;
+  try {
+    const ctrl = new AbortController(); setTimeout(() => ctrl.abort(), 4000);
+    const h = await fetch(AI_URL + "/health", {signal: ctrl.signal}).then(r => r.json());
+    aiOn = !!h.ok;
+  } catch { aiOn = false; }
+  $("ai-badge").hidden = !aiOn;
+  document.querySelectorAll(".ai-intake").forEach(el => el.hidden = !aiOn);
+}
+
+// Each student's texts are rewritten in a separate request, so one student's
+// messages are never sent alongside the other's. Anything that fails keeps its original.
+async function aiNarrate(events) {
+  if (!aiOn) return {};
+  const names = IDS.map(id => $("who-" + id).textContent);
+  const out = {};
+  await Promise.all(IDS.map(async id => {
+    const items = [];
+    events.forEach((ev, i) => {
+      const t = ev.say && ev.say[id];
+      if (t) items.push({id: i + ":" + id, text: t.replace(/^(⚑|🛡)\s*/u, "")});
+    });
+    if (!items.length) return;
+    try {
+      const r = await aiPost("/narrate", {items, names}, 9000);
+      for (const m of r.messages || []) out[m.id] = m.text;
+    } catch {}
+  }));
+  return out;
+}
+
+async function aiFill(id) {
+  const box = document.querySelector(`.student[data-id="${id}"]`);
+  const text = box.querySelector("[data-ai]").value.trim(), btn = box.querySelector(".ai-intake button"), note = box.querySelector(".ai-note");
+  if (!text) { note.textContent = "Type a few sentences first."; return; }
+  btn.disabled = true; note.textContent = "Reading your week…";
+  try {
+    const {form} = await aiPost("/parse", {text}, 15000);
+    const cur = readForms();
+    const merged = {...cur[id], busy: form.busy, earliest: form.earliest, prefer_days: form.prefer_days, prefer_mornings: form.prefer_mornings};
+    if (form.campuses) merged.campuses = form.campuses;
+    if (form.gpa) merged.gpa = form.gpa;
+    if (form.other_private) merged.other_private = form.other_private;
+    fillForms({...cur, [id]: merged});
+    note.textContent = form.busy ? "Filled in below. Check it over." : "I didn't find any busy times. Add them below.";
+  } catch (e) {
+    note.textContent = "AI is unavailable right now. Fill in the form below instead.";
+  } finally { btn.disabled = false; }
+}
+
 const GLUE = `
 import json
 from spring_sync.runner import Runner, build_profile, SAMPLE_FORMS
@@ -481,6 +561,7 @@ async function boot() {
     $("sections").appendChild(r);
   }
   buildForms(); fillForms(SAMPLES);
+  await aiCheck();
   for (const id of ["b-run", "b-adv", "b-reset"]) $(id).disabled = false;
   $("loading").textContent = "";
   ready = true;
@@ -491,6 +572,11 @@ function buildForms() {
     <div class="student ${id === "alex" ? "left" : "right"}" data-id="${id}">
       <h3>${id === "alex" ? "You" : "Your friend"} <span>${id === "alex" ? "sends the invite" : "gets the invite"}</span></h3>
       <label>First name</label><input type="text" data-f="name" maxlength="20">
+      <div class="ai-intake" ${aiOn ? "" : "hidden"}>
+        <label>✨ Or just describe your week</label>
+        <textarea data-ai maxlength="1200" placeholder="I work at Target Tue and Thu evenings, and my bus doesn't get in until 10."></textarea>
+        <button type="button" onclick="aiFill('${id}')">✨ Fill in with AI</button><span class="ai-note"></span>
+      </div>
       <label>When are you busy?</label><textarea data-f="busy"></textarea>
       <div class="hint">One per line: days, times, then why (the why stays private). For example: Tue Thu 16:00-21:00 work</div>
       <div class="row">
@@ -549,7 +635,7 @@ const scroll = o => { const t = $("t-" + o); t.scrollTop = t.scrollHeight; };
 function addEl(o, cls, html) { const el = document.createElement("div"); el.className = cls; el.innerHTML = html; $("t-" + o).appendChild(el); scroll(o); return el; }
 function studentSays(o, text) { $("t-" + o).querySelectorAll(".read").forEach(e => e.remove()); addEl(o, "msg me", esc(text)); addEl(o, "read", "Delivered"); }
 
-async function agentSays(o, text, myRun) {
+async function agentSays(o, text, myRun, aiText) {
   if (!text) return;
   const dots = addEl(o, "typing", "<i></i><i></i><i></i>");
   await sleep(480); dots.remove();
@@ -560,7 +646,7 @@ async function agentSays(o, text, myRun) {
   else if (text.startsWith("🛡")) { cls += " shield"; text = text.slice(2).trim(); }
   else if (text.startsWith("Test mode")) cls += " test";
   else if (text.startsWith("All set")) cls += " final";
-  addEl(o, cls, esc(text));
+  addEl(o, cls, aiText ? esc(aiText) + '<span class="aitag">✨ AI-written</span>' : esc(text));
 }
 
 const FRIENDLY = {INVITE: "Invite", CONSENT: "Agreed to plan", PROPOSE: "Suggested", COUNTER: "Counter-offer", ACCEPT: "Accepted",
@@ -598,11 +684,17 @@ function showChips(o) {
 }
 
 async function render(events, myRun) {
-  for (const ev of events) {
+  let ai = {};
+  if (aiOn) {
+    const dots = IDS.map(id => addEl(id, "typing", "<i></i><i></i><i></i>"));
+    ai = await aiNarrate(events);
+    dots.forEach(d => d.remove());
+  }
+  for (const [i, ev] of events.entries()) {
     if (myRun !== runId) return;
     logEvent(ev);
     const lines = IDS.map(id => [id, ev.say && ev.say[id]]).filter(([, t]) => t);
-    await Promise.all(lines.map(([id, t]) => agentSays(id, t, myRun)));
+    await Promise.all(lines.map(([id, t]) => agentSays(id, t, myRun, ai[i + ":" + id])));
     if (ev.kind === "confirm_request") showChips(ev.student);
     if (ev.kind === "done") {
       if (ev.status === "agreed") setResult("🎉 Same class: " + ev.section + (ev.study_block ? " · study " + ev.study_block.day + " " + ev.study_block.start + "–" + ev.study_block.end : ""), true);

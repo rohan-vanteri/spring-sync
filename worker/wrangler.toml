@@ -1,0 +1,10 @@
+name = "spring-sync-ai"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+MODEL = "gpt-6-luna"
+ALLOWED_ORIGINS = "https://rohan-vanteri.github.io,http://localhost:8766,http://127.0.0.1:8766"
+
+# The OpenAI key is a secret, never in this file:
+#   npx wrangler secret put OPENAI_API_KEY

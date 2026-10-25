@@ -1,0 +1,9 @@
+{
+  "name": "spring-sync-ai",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "deploy": "npx wrangler@3 deploy"
+  }
+}
