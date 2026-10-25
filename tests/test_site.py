@@ -35,6 +35,10 @@ class SiteCopy(unittest.TestCase):
             self.assertTrue(filecmp.cmp(src, dst, shallow=False),
                             "docs/py/spring_sync/%s is stale: run python3 tools/build_site.py" % name)
 
+    def test_pages_serves_underscore_files(self):
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", ".nojekyll")),
+                        "docs/.nojekyll is missing: run python3 tools/build_site.py")
+
     def test_page_loads_every_engine_file(self):
         with open(os.path.join(ROOT, "docs", "index.html")) as f:
             page = f.read()

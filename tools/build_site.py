@@ -19,6 +19,9 @@ def main():
     os.makedirs(DST, exist_ok=True)
     for name in FILES:
         shutil.copyfile(os.path.join(SRC, name), os.path.join(DST, name))
+    # GitHub Pages runs Jekyll by default, which drops files starting with "_"
+    # (like __init__.py). This empty file turns Jekyll off for docs/.
+    open(os.path.join(ROOT, "docs", ".nojekyll"), "w").close()
     print("copied %d files to %s" % (len(FILES), os.path.relpath(DST, ROOT)))
 
 
