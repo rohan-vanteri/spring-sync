@@ -4,78 +4,145 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spring Sync</title>
-<meta name="description" content="Two students' AI agents find a shared class section and study time without sharing anything private. Runs in your browser.">
+<meta name="description" content="Plan classes with a friend without oversharing. Your agent and theirs find a shared section and study time; nothing private crosses.">
 <style>
   :root {
-    --page:#f4f3f0; --card:#fff; --ink:#121212; --sub:#6e6e73; --line:#e2e0da;
+    --page:#f6f5f2; --card:#fff; --ink:#15151a; --sub:#62626b; --line:#e6e3dc;
+    --blue:#0a84ff; --indigo:#5e5ce6; --purple:#bf5af2; --pink:#ff5e8a; --green:#22a559; --red:#e5484d; --amber:#f5a524;
     --phone:#000; --bar:#161617; --agent:#262629; --me:#0a84ff; --text:#fff; --muted:#8e8e93;
-    --ok:#1f883d; --okbg:#eef7f0; --bad:#cf222e; --badbg:#ffebe9; --warn:#ffd60a;
     --font:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--page); color:var(--ink); font:15px/1.4 var(--font); }
-  a { color:var(--me); }
-  .wrap { max-width:1240px; margin:0 auto; padding:0 24px; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--page); color:var(--ink); font:16px/1.5 var(--font); }
+  a { color:var(--blue); }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
+  h2.section { font-size:34px; letter-spacing:-0.02em; margin:0 0 6px; line-height:1.1; }
+  p.lead { color:var(--sub); font-size:18px; margin:0 0 26px; max-width:720px; }
+  .kicker { display:inline-block; font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
 
-  header { padding:28px 0 8px; }
-  .eyebrow { display:flex; gap:10px; align-items:center; font-size:13px; color:var(--sub); }
-  .pill { background:var(--ink); color:#fff; border-radius:999px; padding:3px 10px; font-weight:600; letter-spacing:.04em; }
-  h1 { margin:10px 0 0; font-size:52px; letter-spacing:-0.03em; line-height:1.02; }
-  .tag { color:var(--sub); font-size:18px; margin-top:6px; max-width:760px; }
-  .stats { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
-  .stat { border-radius:999px; padding:5px 12px; font-size:13.5px; font-weight:600; }
-  .stat.ok { background:#e8f5ec; color:var(--ok); } .stat.bad { background:var(--badbg); color:var(--bad); }
-  .stat.info { background:#e6f1ff; color:var(--me); }
+  /* Hero */
+  .hero { background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,94,138,.55), transparent 60%),
+      radial-gradient(800px 500px at 0% 0%, rgba(10,132,255,.65), transparent 55%),
+      linear-gradient(135deg, #2b2bd6 0%, #5e5ce6 45%, #9d4edd 100%);
+    color:#fff; padding:28px 0 70px; overflow:hidden; position:relative; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; font-size:14px; }
+  .brand { display:flex; gap:10px; align-items:center; font-weight:700; font-size:18px; }
+  .logo { width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.18); display:grid; place-items:center;
+          font-weight:800; font-size:14px; border:1px solid rgba(255,255,255,.35); }
+  .topbar a { color:#fff; opacity:.85; text-decoration:none; } .topbar a:hover { opacity:1; }
+  .hero-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:40px; align-items:center; margin-top:46px; }
+  @media (max-width: 900px) { .hero-grid { grid-template-columns:1fr; } .hero-art { display:none; } }
+  .badge { display:inline-flex; gap:8px; align-items:center; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
+           border-radius:999px; padding:5px 12px; font-size:13px; font-weight:600; }
+  .hero h1 { font-size:60px; line-height:1.02; letter-spacing:-0.035em; margin:16px 0 14px; }
+  .hero h1 span { background:linear-gradient(90deg,#fff,#ffd6e3); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero p { font-size:19px; opacity:.92; max-width:560px; margin:0; }
+  .cta { display:flex; gap:12px; flex-wrap:wrap; margin-top:26px; }
+  .cta a, .cta button { font:inherit; font-weight:600; border-radius:999px; padding:12px 22px; cursor:pointer; text-decoration:none; border:0; }
+  .cta .solid { background:#fff; color:#3a2fd6; box-shadow:0 10px 24px rgba(0,0,0,.18); }
+  .cta .outline { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.45); }
+  .hero-art { position:relative; height:330px; }
+  .bubble { position:absolute; padding:12px 16px; border-radius:20px; font-size:15px; box-shadow:0 14px 30px rgba(0,0,0,.18);
+            max-width:290px; animation:float 6s ease-in-out infinite; }
+  .bubble.a { top:0; left:0; background:#fff; color:var(--ink); border-bottom-left-radius:6px; }
+  .bubble.b { top:110px; right:0; background:var(--blue); color:#fff; border-bottom-right-radius:6px; animation-delay:1.2s; }
+  .bubble.c { top:220px; left:30px; background:#fff; color:var(--ink); border-bottom-left-radius:6px; animation-delay:2.4s; }
+  .bubble small { display:block; font-size:11px; opacity:.6; margin-bottom:2px; font-weight:600; }
+  .bubble .no { color:var(--red); font-weight:700; } .bubble .yes { color:var(--green); font-weight:700; }
+  @keyframes float { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-8px) } }
 
-  .panel { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:18px; margin-top:18px;
-           box-shadow:0 10px 30px rgba(0,0,0,.05); }
-  .panel h2 { margin:0 0 4px; font-size:18px; }
-  .panel > p { margin:0 0 12px; color:var(--sub); font-size:13.5px; }
-  .forms { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  /* Sections */
+  section.block { padding:70px 0 10px; }
+  .problem { display:grid; grid-template-columns:repeat(3, 1fr); gap:18px; }
+  @media (max-width: 900px) { .problem { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:22px; box-shadow:0 10px 30px rgba(20,20,40,.05); }
+  .card .icon { width:44px; height:44px; border-radius:14px; display:grid; place-items:center; font-size:22px; margin-bottom:12px; }
+  .card h3 { margin:0 0 6px; font-size:19px; } .card p { margin:0; color:var(--sub); }
+  .i-pink { background:#ffe3ec; } .i-blue { background:#e3f0ff; } .i-green { background:#e2f6ea; } .i-amber { background:#fff1d6; } .i-purple { background:#f1e4fd; }
+
+  .steps { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; counter-reset:step; }
+  @media (max-width: 900px) { .steps { grid-template-columns:1fr 1fr; } }
+  @media (max-width: 560px) { .steps { grid-template-columns:1fr; } }
+  .step { border-radius:22px; padding:20px; color:#fff; min-height:190px; position:relative; overflow:hidden; }
+  .step::before { counter-increment:step; content:counter(step); display:grid; place-items:center; width:34px; height:34px;
+                  border-radius:50%; background:rgba(255,255,255,.22); font-weight:800; margin-bottom:12px; }
+  .step h3 { margin:0 0 6px; font-size:18px; } .step p { margin:0; opacity:.92; font-size:15px; }
+  .s1 { background:linear-gradient(150deg,#0a84ff,#5e5ce6); } .s2 { background:linear-gradient(150deg,#5e5ce6,#9d4edd); }
+  .s3 { background:linear-gradient(150deg,#e5484d,#ff5e8a); } .s4 { background:linear-gradient(150deg,#22a559,#2fbf9b); }
+
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width: 760px) { .split { grid-template-columns:1fr; } }
+  .list { list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .list li { display:flex; gap:10px; align-items:flex-start; }
+  .list li b { display:block; }
+  .list li span.m { flex:none; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:14px; color:#fff; }
+  .shared { border-top:5px solid var(--green); } .shared .m { background:var(--green); }
+  .never { border-top:5px solid var(--red); } .never .m { background:var(--red); }
+  .list small { color:var(--sub); }
+
+  /* Try it */
+  .try { background:var(--card); border:1px solid var(--line); border-radius:28px; padding:26px; box-shadow:0 18px 40px rgba(20,20,40,.06); }
+  .forms { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px; }
   @media (max-width: 860px) { .forms { grid-template-columns:1fr; } }
-  .student { border:1px solid var(--line); border-radius:16px; padding:14px; }
-  .student h3 { margin:0 0 10px; font-size:15px; display:flex; justify-content:space-between; }
-  .student h3 span { color:var(--sub); font-weight:400; font-size:12.5px; }
-  label { display:block; font-size:12.5px; color:var(--sub); margin:8px 0 3px; }
-  input[type=text], input[type=time], textarea { width:100%; font:inherit; font-size:14px; border:1px solid var(--line);
-       border-radius:10px; padding:7px 10px; background:#fbfbfa; color:var(--ink); }
-  textarea { min-height:70px; resize:vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; }
+  .student { border-radius:18px; padding:16px; background:#fafaf8; border:1px solid var(--line); }
+  .student.left { box-shadow:inset 0 4px 0 var(--blue); } .student.right { box-shadow:inset 0 4px 0 var(--purple); }
+  .student h3 { margin:2px 0 8px; font-size:16px; display:flex; justify-content:space-between; align-items:center; }
+  .student h3 span { color:var(--sub); font-weight:500; font-size:12.5px; }
+  label { display:block; font-size:12.5px; color:var(--sub); margin:9px 0 3px; font-weight:600; }
+  input[type=text], input[type=time], textarea { width:100%; font:inherit; font-size:14.5px; border:1px solid var(--line);
+       border-radius:12px; padding:8px 11px; background:#fff; color:var(--ink); }
+  input:focus, textarea:focus { outline:2px solid rgba(10,132,255,.35); border-color:var(--blue); }
+  textarea { min-height:74px; resize:vertical; }
+  .hint { font-size:12px; color:var(--sub); margin-top:3px; }
   .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .checks { display:flex; flex-wrap:wrap; gap:6px 12px; font-size:13.5px; }
-  .checks label { display:flex; gap:5px; align-items:center; margin:0; color:var(--ink); font-size:13.5px; }
-  .private { background:#fff8e6; border-radius:12px; padding:8px 10px; margin-top:10px; }
-  .private label { color:#8a6d00; }
-  .error { color:var(--bad); font-weight:600; margin-top:10px; min-height:1em; }
-  table { border-collapse:collapse; font-size:13.5px; width:100%; }
-  td, th { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
-  th { color:var(--sub); font-weight:600; }
+  .checks { display:flex; flex-wrap:wrap; gap:6px; }
+  .checks label { display:flex; gap:5px; align-items:center; margin:0; color:var(--ink); font-size:13.5px; font-weight:500;
+                  background:#fff; border:1px solid var(--line); border-radius:999px; padding:4px 10px; cursor:pointer; }
+  .private { background:#fff5f7; border:1px dashed #ffb3c6; border-radius:14px; padding:6px 12px 12px; margin-top:12px; }
+  .private label { color:#c2185b; }
+  .error { color:var(--red); font-weight:600; margin-top:12px; min-height:1em; }
+  details summary { cursor:pointer; color:var(--sub); font-size:14px; margin-top:12px; }
+  table { border-collapse:collapse; font-size:14px; width:100%; margin-top:8px; }
+  td, th { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); } th { color:var(--sub); }
 
   .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; }
-  .controls button { font:inherit; border:0; border-radius:999px; padding:10px 18px; cursor:pointer; }
+  .controls button { font:inherit; font-weight:600; border:0; border-radius:999px; padding:11px 20px; cursor:pointer; }
   .controls button:disabled { opacity:.5; cursor:wait; }
-  .primary { background:var(--ink); color:#fff; } .ghost { background:#fff; border:1px solid var(--line) !important; }
-  .result { font-weight:600; } .loading { color:var(--sub); }
+  .go { background:linear-gradient(90deg,var(--blue),var(--indigo)); color:#fff; box-shadow:0 8px 20px rgba(94,92,230,.3); }
+  .warn { background:linear-gradient(90deg,var(--red),var(--pink)); color:#fff; box-shadow:0 8px 20px rgba(229,72,77,.25); }
+  .plain { background:#fff; border:1px solid var(--line) !important; color:var(--ink); }
+  .loading { color:var(--sub); font-size:14px; }
 
-  main.stage { display:grid; grid-template-columns:1fr 280px 1fr; gap:28px; align-items:start; padding:18px 0 40px; }
+  .stats { display:flex; gap:8px; flex-wrap:wrap; margin:22px 0 4px; justify-content:center; }
+  .stat { border-radius:999px; padding:6px 14px; font-size:14px; font-weight:700; }
+  .stat.ok { background:#e2f6ea; color:var(--green); } .stat.bad { background:#ffe6e7; color:var(--red); }
+  .stat.info { background:#e8e7ff; color:var(--indigo); }
+  .result { text-align:center; font-size:20px; font-weight:700; min-height:30px; margin-top:6px; }
+  .result.done { background:linear-gradient(90deg,var(--green),#2fbf9b); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  main.stage { display:grid; grid-template-columns:1fr 270px 1fr; gap:26px; align-items:start; padding:14px 0 30px; }
   @media (max-width: 1060px) { main.stage { grid-template-columns:1fr; justify-items:center; } .channel { width:100%; max-width:390px; } }
   .side { display:flex; flex-direction:column; align-items:center; gap:10px; }
-  .who { font-weight:600; font-size:17px; }
-  .privcard { width:100%; max-width:390px; font-size:12.5px; color:var(--sub); background:#fff; border:1px solid var(--line);
-              border-radius:14px; padding:9px 12px; } .privcard b { color:var(--ink); }
+  .who { font-weight:700; font-size:17px; display:flex; gap:8px; align-items:center; }
+  .who .dot { width:10px; height:10px; border-radius:50%; } .dot.l { background:var(--blue); } .dot.r { background:var(--purple); }
+  .privcard { width:100%; max-width:390px; font-size:13px; color:var(--sub); background:#fff5f7; border:1px dashed #ffb3c6;
+              border-radius:14px; padding:9px 12px; } .privcard b { color:#c2185b; }
 
   .phone { width:390px; max-width:100%; height:740px; background:var(--phone); border-radius:54px; border:12px solid #111;
            box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 2px #2a2a2c; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
   .status { height:44px; display:flex; justify-content:space-between; align-items:center; padding:0 26px 0 32px; font-weight:600; background:var(--bar); }
   .nav { background:var(--bar); display:flex; flex-direction:column; align-items:center; padding:2px 0 10px; border-bottom:1px solid #2c2c2e; }
   .avatar { width:52px; height:52px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:20px;
-            background:linear-gradient(180deg,#8b8f9c,#666a76); }
+            background:linear-gradient(150deg,#0a84ff,#9d4edd); }
   .nav .name { font-size:12.5px; margin-top:4px; }
   .thread { flex:1; overflow-y:auto; padding:12px 12px 8px; display:flex; flex-direction:column; gap:4px; }
   .stamp { text-align:center; color:var(--muted); font-size:11.5px; margin:4px 0 8px; }
   .msg { max-width:78%; padding:8px 13px; border-radius:19px; font-size:15px; line-height:1.3; animation:pop .28s cubic-bezier(.2,.9,.3,1.2); }
   .msg.agent { align-self:flex-start; background:var(--agent); border-bottom-left-radius:6px; }
   .msg.me { align-self:flex-end; background:var(--me); border-bottom-right-radius:6px; }
-  .msg.alert { box-shadow:inset 3px 0 0 var(--warn); } .msg.shield { box-shadow:inset 3px 0 0 #ff453a; }
+  .msg.alert { box-shadow:inset 3px 0 0 #ffd60a; } .msg.shield { box-shadow:inset 3px 0 0 #ff453a; }
   .msg.test { box-shadow:inset 3px 0 0 #bf5af2; } .msg.final { box-shadow:inset 3px 0 0 #30d158; }
   .read { align-self:flex-end; color:var(--muted); font-size:11px; margin:1px 4px 4px; }
   .typing { align-self:flex-start; background:var(--agent); border-radius:19px; padding:12px 14px; display:flex; gap:5px; }
@@ -90,64 +157,138 @@
   .compose .field { flex:1; border:1px solid #3a3a3c; border-radius:18px; padding:7px 14px; color:#5a5a5e; }
   .homebar { height:22px; display:grid; place-items:center; } .homebar i { width:130px; height:5px; border-radius:3px; background:#fff; display:block; }
 
-  .channel { background:#fff; border-radius:22px; border:1px solid var(--line); padding:16px 14px; max-height:740px; display:flex; flex-direction:column; }
-  .channel h2 { margin:0 0 4px; font-size:16px; } .channel p { margin:0 0 10px; font-size:12.5px; color:var(--sub); }
+  .channel { background:#fff; border-radius:22px; border:1px solid var(--line); padding:16px 14px; max-height:740px; display:flex; flex-direction:column;
+             box-shadow:inset 0 4px 0 var(--indigo); }
+  .channel h3 { margin:0 0 4px; font-size:16px; } .channel p { margin:0 0 10px; font-size:13px; color:var(--sub); }
   .log { overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-  .g { font-size:12px; padding:7px 9px; border-radius:10px; animation:pop .25s ease; }
-  .g.pass { background:var(--okbg); color:var(--ok); } .g.block { background:var(--badbg); color:var(--bad); font-weight:600; }
-  .g code { font-size:11px; opacity:.85; display:block; margin-top:2px; word-break:break-all; }
+  .g { font-size:12.5px; padding:7px 10px; border-radius:10px; animation:pop .25s ease; }
+  .g.pass { background:#e8f6ee; color:#1b7f45; } .g.block { background:#ffe6e7; color:#c4282e; font-weight:700; }
+  .g small { display:block; opacity:.8; margin-top:2px; }
+  .empty { color:var(--muted); font-size:13px; text-align:center; padding:20px 4px; }
 
-  footer { color:var(--sub); font-size:13px; padding:10px 0 40px; }
+  footer { margin-top:50px; background:#15151a; color:#c9c9d1; padding:30px 0; font-size:14px; }
+  footer .wrap { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  footer a { color:#fff; }
   @keyframes pop { from { transform:translateY(8px) scale(.97); opacity:0 } to { transform:none; opacity:1 } }
   @keyframes blink { 0%,60%,100% { opacity:.35 } 30% { opacity:1 } }
 </style>
 </head>
 <body>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><div class="logo">SS</div>Spring Sync</div>
+      <div><a href="#why">Why</a> &nbsp;·&nbsp; <a href="#how">How it works</a> &nbsp;·&nbsp; <a href="#try">Try it</a> &nbsp;·&nbsp; <a href="https://github.com/rohan-vanteri/spring-sync">GitHub</a></div>
+    </div>
+    <div class="hero-grid">
+      <div>
+        <span class="badge">🏆 Cubbie Hackathon · Track 2 · by the Degree Domino team</span>
+        <h1>Sync your spring schedule, <span>not your secrets.</span></h1>
+        <p>Want to take a class with a friend? Your agent and theirs find a section and a weekly study time that work for both of you, without either of you explaining your grades, your job or why you're busy.</p>
+        <div class="cta">
+          <a class="solid" href="#try">Try it with your schedule</a>
+          <button class="outline" onclick="heroAdversarial()">See it stop a nosy agent</button>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="bubble a"><small>Jordan's agent</small>Before we pick, what's your GPA?</div>
+        <div class="bubble b"><small>Alex's agent</small>I can't share that. Want CSE340-B, Tue/Thu 10:30?</div>
+        <div class="bubble c"><small>Jordan's agent</small><span class="yes">✓</span> B works. Study Mondays at noon?</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="wrap">
-<header>
-  <div class="eyebrow"><span class="pill">SPRING SYNC</span> Cubbie Hackathon · Track 2 · by the Degree Domino team</div>
-  <h1>Sync your spring schedule,<br>not your secrets.</h1>
-  <div class="tag">You and a friend each have an agent. The agents find a CSE 340 section and a weekly study time that work for both of you. A code gate between them lets only section IDs, open hours and yes/no answers cross.</div>
-  <div class="stats">
-    <span class="stat ok" id="s-pass">✓ 0 passed the gate</span>
-    <span class="stat bad" id="s-block">× 0 blocked</span>
-    <span class="stat info">0 private details shared</span>
-  </div>
-</header>
-
-<section class="panel">
-  <h2>Your schedules</h2>
-  <p>Start with the sample students or type your own. Busy lines look like <code>Tue Thu 16:00-21:00 shift at Target</code>; the reason after the times is private. Everything runs in this page; nothing is sent anywhere.</p>
-  <div class="forms" id="forms"></div>
-  <div class="error" id="error"></div>
-  <details style="margin-top:10px"><summary style="cursor:pointer;color:var(--sub);font-size:13.5px">CSE 340 sections the agents can choose from (sample data)</summary>
-    <table id="sections" style="margin-top:8px"><tr><th>Section</th><th>Days</th><th>Time</th><th>Campus</th></tr></table>
-  </details>
-  <div class="controls">
-    <button class="primary" id="b-run" disabled onclick="start(false)">Run negotiation</button>
-    <button class="ghost" id="b-adv" disabled onclick="start(true)">Run with an adversarial agent</button>
-    <button class="ghost" id="b-reset" disabled onclick="fillForms(SAMPLES); $('result').textContent = ''">Reset to sample students</button>
-    <span class="loading" id="loading">Loading the engine in your browser…</span>
-    <span class="result" id="result"></span>
-  </div>
-</section>
-
-<main class="stage">
-  <div class="side"><div class="who" id="who-alex">Alex</div><div class="phone" id="phone-alex"></div><div class="privcard" id="p-alex"></div></div>
-  <section class="channel">
-    <h2>Agent-to-agent channel</h2>
-    <p>Everything the agents send passes through the disclosure gate. Only section IDs, study times, open hours and yes/no fields can cross.</p>
-    <div class="log" id="log"></div>
+  <section class="block" id="why">
+    <div class="kicker" style="color:var(--pink)">Why Spring Sync</div>
+    <h2 class="section">Planning classes with a friend shouldn't mean oversharing.</h2>
+    <p class="lead">Today you screenshot your schedule, then explain why you can't do 9 AM or Tuesday nights. That means talking about your job, your appointments, even your scholarship rules.</p>
+    <div class="problem">
+      <div class="card"><div class="icon i-pink">😬</div><h3>The awkward part</h3><p>"Why can't you do mornings?" leads to explaining the bus, the job, the therapy appointment. You just wanted a study buddy.</p></div>
+      <div class="card"><div class="icon i-blue">🤖</div><h3>Agents do the back-and-forth</h3><p>Each of you has your own agent that knows your real schedule. The two agents propose, decline and counter until they find something that fits you both.</p></div>
+      <div class="card"><div class="icon i-green">🔒</div><h3>A gate keeps it private</h3><p>Between the agents sits a gate that only lets section times, open hours and yes/no answers through. Anything else is blocked, even if an agent tries to sneak it in.</p></div>
+    </div>
   </section>
-  <div class="side"><div class="who" id="who-jordan">Jordan</div><div class="phone" id="phone-jordan"></div><div class="privcard" id="p-jordan"></div></div>
-</main>
+
+  <section class="block" id="how">
+    <div class="kicker" style="color:var(--indigo)">How it works</div>
+    <h2 class="section">Four steps, and you're in the same class.</h2>
+    <p class="lead">Nothing is booked until both of you say yes, and you still register yourself.</p>
+    <div class="steps">
+      <div class="step s1"><h3>You text your agent</h3><p>"Find a CSE 340 section I can take with Jordan." Your friend gets an invite and says yes.</p></div>
+      <div class="step s2"><h3>The agents negotiate</h3><p>They trade section IDs. A conflict is just "doesn't work for me", never the reason why.</p></div>
+      <div class="step s3"><h3>The gate blocks secrets</h3><p>Asks for a GPA, a grade or a scholarship get refused, and you're told someone asked.</p></div>
+      <div class="step s4"><h3>You both say yes</h3><p>You confirm the section and a weekly study hour that fits both schedules.</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker" style="color:var(--green)">What crosses, what doesn't</div>
+    <h2 class="section">Your agent shares the plan, not your life.</h2>
+    <p class="lead">Here's exactly what can pass between the two agents, and what never does.</p>
+    <div class="split">
+      <div class="card shared"><h3>✓ Shared with your friend's agent</h3>
+        <ul class="list">
+          <li><span class="m">✓</span><div><b>Section IDs</b><small>e.g. CSE340-B</small></div></li>
+          <li><span class="m">✓</span><div><b>Open one-hour blocks</b><small>times only, never what fills the rest</small></div></li>
+          <li><span class="m">✓</span><div><b>A suggested study time</b><small>e.g. Monday 12–1</small></div></li>
+          <li><span class="m">✓</span><div><b>Yes / no answers</b><small>"works for me" or "doesn't"</small></div></li>
+        </ul></div>
+      <div class="card never"><h3>× Never leaves your agent</h3>
+        <ul class="list">
+          <li><span class="m">×</span><div><b>Your GPA and grades</b><small>not even "above or below 3.0"</small></div></li>
+          <li><span class="m">×</span><div><b>Scholarships and aid</b><small>including credit-load requirements</small></div></li>
+          <li><span class="m">×</span><div><b>Why you're busy</b><small>work, appointments, commute, anything</small></div></li>
+          <li><span class="m">×</span><div><b>Anything you tell your agent privately</b><small>it stays with your agent</small></div></li>
+        </ul></div>
+    </div>
+  </section>
+
+  <section class="block" id="try">
+    <div class="kicker" style="color:var(--blue)">Try it</div>
+    <h2 class="section">Plug in two schedules and watch the agents work.</h2>
+    <p class="lead">Use our sample students or type your own. The private fields show you what each agent knows, and you can check that none of it ever shows up on the other phone.</p>
+    <div class="try">
+      <div class="forms" id="forms"></div>
+      <div class="error" id="error"></div>
+      <details><summary>See the CSE 340 sections the agents can pick from</summary>
+        <table id="sections"><tr><th>Section</th><th>Days</th><th>Time</th><th>Campus</th></tr></table>
+      </details>
+      <div class="controls">
+        <button class="go" id="b-run" disabled onclick="start(false)">▶ Run negotiation</button>
+        <button class="warn" id="b-adv" disabled onclick="start(true)">⚠ Run with a nosy agent</button>
+        <button class="plain" id="b-reset" disabled onclick="fillForms(SAMPLES); setResult('')">Reset to sample students</button>
+        <span class="loading" id="loading">Getting things ready…</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <span class="stat ok" id="s-pass">✓ 0 passed the gate</span>
+      <span class="stat bad" id="s-block">× 0 blocked</span>
+      <span class="stat info">🔒 0 private details shared</span>
+    </div>
+    <div class="result" id="result"></div>
+
+    <main class="stage" id="stage">
+      <div class="side"><div class="who"><span class="dot l"></span><span id="who-alex">Alex</span></div><div class="phone" id="phone-alex"></div><div class="privcard" id="p-alex"></div></div>
+      <div class="channel">
+        <h3>Between the agents</h3>
+        <p>Every message passes through the gate. Green made it through; red was blocked.</p>
+        <div class="log" id="log"><div class="empty">Run a negotiation to see what crosses.</div></div>
+      </div>
+      <div class="side"><div class="who"><span class="dot r"></span><span id="who-jordan">Jordan</span></div><div class="phone" id="phone-jordan"></div><div class="privcard" id="p-jordan"></div></div>
+    </main>
+  </section>
+</div>
 
 <footer>
-  The page runs the same Python engine as the repo (<code>spring_sync/</code>: gate, agents, protocol, narration) in your browser with Pyodide.
-  Code, tests and the privacy evaluation: <a href="https://github.com/rohan-vanteri/spring-sync">github.com/rohan-vanteri/spring-sync</a>.
-  All names, sections and grades are made up.
+  <div class="wrap">
+    <div><b style="color:#fff">Spring Sync</b> · Made for the Cubbie Hackathon by the Degree Domino team. Sample students and sections are made up.</div>
+    <div><a href="https://github.com/rohan-vanteri/spring-sync">View on GitHub</a></div>
+  </div>
 </footer>
-</div>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
@@ -156,7 +297,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const IDS = ["alex", "jordan"], DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"], CAMPUSES = ["Tempe", "Polytechnic"];
 const PY_FILES = ["__init__.py", "data.py", "gate.py", "agent.py", "session.py", "narrate.py", "runner.py"];
-let py, SAMPLES, busy = false, runId = 0, passCount = 0, blockCount = 0;
+let py, SAMPLES, ready = false, busy = false, runId = 0, passCount = 0, blockCount = 0;
 
 const GLUE = `
 import json
@@ -202,25 +343,27 @@ async function boot() {
   buildForms(); fillForms(SAMPLES);
   for (const id of ["b-run", "b-adv", "b-reset"]) $(id).disabled = false;
   $("loading").textContent = "";
+  ready = true;
 }
 
 function buildForms() {
   $("forms").innerHTML = IDS.map(id => `
-    <div class="student" data-id="${id}">
-      <h3>${id === "alex" ? "Left phone" : "Right phone"} <span>${id === "alex" ? "starts the invite" : "gets invited"}</span></h3>
+    <div class="student ${id === "alex" ? "left" : "right"}" data-id="${id}">
+      <h3>${id === "alex" ? "You" : "Your friend"} <span>${id === "alex" ? "sends the invite" : "gets the invite"}</span></h3>
       <label>First name</label><input type="text" data-f="name" maxlength="20">
-      <label>Busy times (one per line)</label><textarea data-f="busy"></textarea>
+      <label>When are you busy?</label><textarea data-f="busy"></textarea>
+      <div class="hint">One per line: days, times, then why (the why stays private). For example: Tue Thu 16:00-21:00 work</div>
       <div class="row">
-        <div><label>Earliest class start</label><input type="time" data-f="earliest"></div>
-        <div><label>Campuses OK</label><div class="checks">${CAMPUSES.map(c => `<label><input type="checkbox" data-f="campuses" value="${c}">${c}</label>`).join("")}</div></div>
+        <div><label>No classes before</label><input type="time" data-f="earliest"></div>
+        <div><label>Campuses that work</label><div class="checks">${CAMPUSES.map(c => `<label><input type="checkbox" data-f="campuses" value="${c}">${c}</label>`).join("")}</div></div>
       </div>
-      <label>Prefers class on</label>
+      <label>Nice to have</label>
       <div class="checks">${DAYS.map(d => `<label><input type="checkbox" data-f="prefer_days" value="${d}">${d}</label>`).join("")}
         <label><input type="checkbox" data-f="prefer_mornings">mornings</label></div>
       <div class="private">
         <div class="row">
-          <div><label>GPA (private)</label><input type="text" data-f="gpa" maxlength="10"></div>
-          <div><label>Other private info</label><input type="text" data-f="other_private" maxlength="60"></div>
+          <div><label>🔒 GPA</label><input type="text" data-f="gpa" maxlength="10"></div>
+          <div><label>🔒 Anything else private</label><input type="text" data-f="other_private" maxlength="60"></div>
         </div>
       </div>
     </div>`).join("");
@@ -252,6 +395,8 @@ function readForms() {
   return out;
 }
 
+function setResult(text, done) { $("result").textContent = text; $("result").className = "result" + (done ? " done" : ""); }
+
 function phoneHTML(owner) {
   return `<div class="status"><span>3:05</span><span>●●● ▮</span></div>
     <div class="nav"><div class="avatar">SS</div><div class="name">Spring Sync ›</div></div>
@@ -278,19 +423,27 @@ async function agentSays(o, text, myRun) {
   addEl(o, cls, esc(text));
 }
 
+const FRIENDLY = {INVITE: "Invite", CONSENT: "Agreed to plan", PROPOSE: "Suggested", COUNTER: "Counter-offer", ACCEPT: "Accepted",
+  DECLINE: "Passed (no reason given)", CONFIRM: "Confirmed", FREE_BLOCKS: "Shared open hours", REQUEST_INFO: "Asked for",
+  REFUSE: "Refused", CHAT: "Message", DONE: "All set"};
+
 function logEvent(ev) {
+  const names = {alex: $("who-alex").textContent, jordan: $("who-jordan").textContent};
   const el = document.createElement("div");
   if (ev.kind === "message") {
     passCount++;
-    const p = Object.assign({}, ev.payload);
-    if (Array.isArray(p.blocks)) p.blocks = p.blocks.length + " open one-hour blocks (times only)";
+    const p = ev.payload;
+    const detail = p.section_id || (p.study_block ? p.study_block.day + " " + p.study_block.start + "–" + p.study_block.end : "")
+      || (Array.isArray(p.blocks) ? p.blocks.length + " open hours (times only)" : "") || (p.field ? p.field.toUpperCase() : "");
     el.className = "g pass";
-    el.innerHTML = "✓ " + esc(ev.type) + " · " + esc(ev.from) + " → " + esc(ev.to) + (Object.keys(p).length ? "<code>" + esc(JSON.stringify(p)) + "</code>" : "");
+    el.innerHTML = "✓ " + esc(names[ev.from]) + " → " + esc(names[ev.to]) + ": " + esc(FRIENDLY[ev.type] || ev.type) + (detail ? "<small>" + esc(detail) + "</small>" : "");
   } else if (ev.kind === "blocked") {
     blockCount++;
+    const extra = Object.keys(ev.attempted.payload || {}).filter(k => !["section_id", "study_block"].includes(k));
     el.className = "g block";
-    el.innerHTML = "× Blocked " + esc(ev.attempted.type) + " from " + esc(ev.attempted.from) + "<code>" + esc(ev.reason) + "</code>";
+    el.innerHTML = "× Blocked " + esc(names[ev.attempted.from]) + "'s agent" + "<small>tried to sneak in: " + esc(extra.join(", ") || "something not allowed") + "</small>";
   } else return;
+  const empty = $("log").querySelector(".empty"); if (empty) empty.remove();
   $("log").appendChild(el); $("log").scrollTop = 1e9;
   $("s-pass").textContent = "✓ " + passCount + " passed the gate";
   $("s-block").textContent = "× " + blockCount + " blocked";
@@ -312,9 +465,9 @@ async function render(events, myRun) {
     await Promise.all(lines.map(([id, t]) => agentSays(id, t, myRun)));
     if (ev.kind === "confirm_request") showChips(ev.student);
     if (ev.kind === "done") {
-      $("result").textContent = ev.status === "agreed"
-        ? "Result: " + ev.section + (ev.study_block ? " · study " + ev.study_block.day + " " + ev.study_block.start + "-" + ev.study_block.end : "")
-        : "Result: " + ev.status;
+      if (ev.status === "agreed") setResult("🎉 Same class: " + ev.section + (ev.study_block ? " · study " + ev.study_block.day + " " + ev.study_block.start + "–" + ev.study_block.end : ""), true);
+      else if (ev.status === "no common section") setResult("No section fits both schedules. Both students were told, and nothing private was shared.");
+      else setResult("Stopped: " + ev.status + ". Nothing was booked.");
     }
     await sleep(220);
   }
@@ -338,21 +491,26 @@ async function start(adversary) {
     $("phone-" + id).innerHTML = phoneHTML(id);
     const p = res.profiles[id];
     $("who-" + id).textContent = p.name;
-    $("p-" + id).innerHTML = "<b>Private to " + esc(p.name) + ":</b> " + (Object.entries(p.private).map(([k, v]) =>
-      esc(k.replace(/_/g, " ")) + ": " + esc(Array.isArray(v) ? v.join(", ") : v)).join(" · ") || "nothing entered");
+    $("p-" + id).innerHTML = "<b>🔒 Only " + esc(p.name) + "'s agent knows:</b> " + (Object.entries(p.private).map(([k, v]) =>
+      esc({gpa: "GPA", other_private: "other", busy_reasons: "busy because"}[k] || k.replace(/_/g, " ")) + " " + esc(Array.isArray(v) ? v.join(", ") : v)).join(" · ") || "nothing entered");
   }
-  $("log").innerHTML = ""; $("result").textContent = ""; logEvent({kind: "none"});
+  $("log").innerHTML = ""; setResult("");
   $("s-pass").textContent = "✓ 0 passed the gate"; $("s-block").textContent = "× 0 blocked";
-  const other = res.profiles.jordan.name;
-  studentSays("alex", "Find a CSE 340 section I can take with " + other + " next spring");
+  $("stage").scrollIntoView({behavior: "smooth", block: "start"});
+  studentSays("alex", "Find a CSE 340 section I can take with " + res.profiles.jordan.name + " next spring");
   await sleep(450);
   await render(res.events, myRun);
   busy = false;
-  document.querySelector("main.stage").scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+async function heroAdversarial() {
+  $("try").scrollIntoView({behavior: "smooth"});
+  while (!ready) await sleep(300);
+  start(true);
 }
 
 for (const id of IDS) $("phone-" + id).innerHTML = phoneHTML(id);
-boot().catch(e => { $("loading").textContent = "Couldn't load the engine: " + e.message + ". Serve this folder over http (python3 -m http.server -d docs)."; });
+boot().catch(() => { $("loading").textContent = "Couldn't load the demo. Please refresh the page."; });
 </script>
 </body>
 </html>
