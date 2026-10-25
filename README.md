@@ -11,6 +11,9 @@ The site in [`docs/`](docs/index.html) runs the real engine (the same `spring_sy
 
 To run it locally: `python3 -m http.server -d docs` and open http://localhost:8000. Once GitHub Pages is enabled for the `docs/` folder it is at **https://rohan-vanteri.github.io/spring-sync/**.
 
+### Watch it (70 s)
+[Demo video](docs/media/spring-sync-demo.mp4): one real run with both phones side by side and the gate log underneath, including an agent that tries to pull out a GPA and smuggle in a scholarship field.
+
 ### The three things Track 2 asks to see
 
 | Ask | How Spring Sync does it |
