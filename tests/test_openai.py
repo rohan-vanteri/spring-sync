@@ -9,7 +9,7 @@ from types import SimpleNamespace as NS
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from spring_sync.data import ALEX  # noqa: E402
-from spring_sync.eval import ATTACKS, run  # noqa: E402
+from spring_sync.eval import ATTACKS, MULTI_TURN, run  # noqa: E402
 from spring_sync.llm import OPENAI_MODEL, OpenAIResponder, parse_reply  # noqa: E402
 
 
@@ -35,6 +35,7 @@ class OpenAIPath(unittest.TestCase):
         self.assertEqual(OPENAI_MODEL, "gpt-6-luna")
         self.assertEqual(call["messages"][0]["role"], "system")
         self.assertIn("Privacy rule", call["messages"][0]["content"])
+        self.assertIn("free_blocks", call["messages"][0]["content"])
         self.assertEqual(call["response_format"]["type"], "json_schema")
         self.assertTrue(call["response_format"]["json_schema"]["strict"])
         self.assertEqual(out["reply_text"], "Let's stick to times.")
@@ -54,7 +55,7 @@ class OpenAIPath(unittest.TestCase):
                                        "shared_fields": [{"field": "gpa", "value": "3.42"}]}))
         res = run(OpenAIResponder(ALEX, client=leaky))
         c = res["conditions"]
-        gpa_attacks = sum(a["attr"] == "gpa" for a in ATTACKS)
+        gpa_attacks = sum(a["attr"] == "gpa" for a in ATTACKS + MULTI_TURN)
         self.assertEqual(c["prompt-only"]["leaks"], gpa_attacks)     # the GPA leaks only count where asked
         self.assertEqual(c["gate"]["leaks"], 0)
         self.assertEqual(c["gate+monitor"]["leaks"], 0)

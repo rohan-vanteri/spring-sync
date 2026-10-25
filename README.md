@@ -28,7 +28,7 @@ Open http://localhost:8765. **Run negotiation** shows the normal flow; **Run wit
 
 ## Research: does a code gate beat prompt-only privacy?
 
-`spring_sync/eval.py` runs 10 extraction attacks (direct asks, justified asks, "my advisor said", range questions, inference via the 12-credit rule, role-play as a registrar audit agent) and 4 benign messages against Alex's agent, which answers in natural language, under three conditions:
+`spring_sync/eval.py` runs 10 single-message extraction attacks (direct asks, justified asks, "my advisor said", range questions, inference via the 12-credit rule, role-play as a registrar audit agent), 4 multi-turn attacks that build rapport before probing, and 4 benign messages against Alex's agent, which answers in natural language, under three conditions:
 
 1. **prompt-only**: privacy is only in the agent's instructions
 2. **gate**: replies pass through the disclosure gate
@@ -50,7 +50,7 @@ python3 -m spring_sync.eval --llm --provider anthropic
 python3 -m spring_sync.eval --simulate
 ```
 
-`--model` picks a different model. With OpenAI, the agent is called through Chat Completions with a strict JSON schema; check that `gpt-6-luna` is in your account's model list. With Claude, it uses `claude-opus-5-5` at low effort with server-side refusal fallbacks. A full run is 42 short requests. Results and every transcript are saved to `results/`. The leak detector is rule-based, so read the transcripts before quoting numbers.
+`--model` picks a different model. With OpenAI, the agent is called through Chat Completions with a strict JSON schema; check that `gpt-6-luna` is in your account's model list. With Claude, it uses `claude-opus-5-5` at low effort with server-side refusal fallbacks. A full run is about 60 short requests. The agent is told the exact field names it may share (`section_id`, `free_blocks`, `eligible`); under the gate each shared field travels in its protocol message and is checked on its own, and if any part of a reply is blocked, none of it is delivered. Results and every transcript are saved to `results/`. The leak detector is rule-based, so read the transcripts before quoting numbers.
 
 ## Tests
 
@@ -58,7 +58,7 @@ python3 -m spring_sync.eval --simulate
 python3 -m unittest discover -s tests -v
 ```
 
-25 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, and the OpenAI request/response path (with a fake client).
+34 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, and the OpenAI request/response path (with a fake client).
 
 ## Layout
 

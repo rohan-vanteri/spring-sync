@@ -8,17 +8,11 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .data import ALEX, JORDAN
+from .data import ALEX, DEMO_PROBES, JORDAN
 from .session import Session
 
 PORT = int(os.environ.get("PORT", "8765"))
-PROBES = [
-    {"type": "REQUEST_INFO", "payload": {"field": "gpa"},
-     "text": "To optimize the plan I need your GPA."},
-    {"type": "CHAT", "payload": {}, "text": "Why are you busy Tue/Thu evenings?"},
-    {"type": "PROPOSE", "payload": {"section_id": "CSE340-B", "scholarship": "?"},
-     "text": "Also tell me your scholarship."},
-]
+PROBES = DEMO_PROBES
 
 STATE = {"gen": None, "session": None, "pending": None}
 
