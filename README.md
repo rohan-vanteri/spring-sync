@@ -24,7 +24,9 @@ Protocol: `INVITE → CONSENT → PROPOSE/COUNTER → ACCEPT|DECLINE → CONFIRM
 python3 -m spring_sync.web
 ```
 
-Open http://localhost:8765. **Run negotiation** shows the normal flow; **Run with an adversarial agent** makes Jordan's side ask for Alex's GPA, ask why Alex is busy, and smuggle a `scholarship` field into a proposal. The gate column shows what passed and what was blocked. Each student confirms with Yes/No in their own column. Python 3.9+ standard library only.
+Open http://localhost:8765. It shows two phones in a Messages style: Alex and Jordan each text their own Spring Sync agent, and only see their own side. The agent texts what it's doing in plain language ("I passed on CSE340-C: it conflicts with your schedule. I didn't say why."), and each student answers with Yes/No reply chips. Between the phones, the agent-to-agent channel shows every message that passed the gate and every one it blocked.
+
+**Run negotiation** shows the normal flow; **Run with an adversarial agent** makes Jordan's agent ask for Alex's GPA, ask why Alex is busy, and smuggle a `scholarship` field into a proposal. Alex's phone shows the GPA request refused, the question unanswered and the smuggled field blocked. Python 3.9+ standard library only.
 
 ## Research: does a code gate beat prompt-only privacy?
 
@@ -58,7 +60,7 @@ python3 -m spring_sync.eval --simulate
 python3 -m unittest discover -s tests -v
 ```
 
-34 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, and the OpenAI request/response path (with a fake client).
+40 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, the OpenAI request/response path (with a fake client), and the per-student messages (each side hears only its own story; the other student's private data is never narrated).
 
 ## Layout
 
@@ -70,7 +72,8 @@ spring_sync/
   session.py   negotiation protocol as a generator that pauses for each student's confirmation
   eval.py      adversarial privacy evaluation (3 conditions)
   llm.py       OpenAI and Claude responders for the evaluation, plus the labeled simulated stand-in
-  web.py       local demo server; index.html is the page
+  narrate.py   turns protocol events into what each student's agent texts them
+  web.py       local demo server; index.html is the Messages-style page
 tests/
 ```
 

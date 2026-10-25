@@ -5,126 +5,247 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spring Sync</title>
 <style>
-  :root { --bg:#f4f3f0; --card:#fff; --ink:#121212; --sub:#767676; --blue:#0a84ff; --gray:#e9e9eb;
-          --ok:#1f883d; --bad:#cf222e; --warn:#9a6700; --warnbg:#fff8c5; --line:#e2e0da; }
+  :root {
+    --page:#f4f3f0; --ink:#121212; --sub:#767676; --line:#e2e0da;
+    --phone:#000; --bar:#161617; --agent:#262629; --me:#0a84ff; --text:#fff; --muted:#8e8e93;
+    --ok:#30d158; --bad:#ff453a; --warn:#ffd60a;
+    --font:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink);
-         font:15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
-  header { padding:28px 32px 12px; }
-  h1 { margin:0; font-size:44px; letter-spacing:-0.02em; }
-  .tag { color:var(--sub); margin-top:4px; }
-  .controls { margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
-  button { font:inherit; border:0; border-radius:12px; padding:10px 16px; cursor:pointer; }
+  body { margin:0; background:var(--page); color:var(--ink); font:15px/1.35 var(--font); }
+  header { max-width:1240px; margin:0 auto; padding:28px 24px 8px; }
+  h1 { margin:0; font-size:48px; letter-spacing:-0.025em; }
+  .tag { color:var(--sub); font-size:17px; margin-top:4px; }
+  .controls { margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .controls button { font:inherit; border:0; border-radius:999px; padding:10px 18px; cursor:pointer; }
   .primary { background:var(--ink); color:#fff; }
-  .ghost { background:#fff; border:1px solid var(--line); }
-  main { display:grid; grid-template-columns: 1fr 300px 1fr; gap:18px; padding:16px 32px 40px; }
-  @media (max-width: 980px) { main { grid-template-columns:1fr; } }
-  .col { background:var(--card); border-radius:22px; box-shadow:0 12px 40px rgba(0,0,0,.08);
-         display:flex; flex-direction:column; min-height:560px; overflow:hidden; }
-  .col h2 { margin:0; font-size:17px; padding:16px 18px 6px; }
-  .private { margin:0 18px 10px; padding:10px 12px; border-radius:12px; background:#f6f6f6;
-             font-size:12.5px; color:var(--sub); }
+  .ghost { background:#fff; border:1px solid var(--line) !important; }
+  .result { color:var(--ink); font-weight:600; margin-left:6px; }
+
+  main { max-width:1240px; margin:0 auto; padding:16px 24px 48px;
+         display:grid; grid-template-columns: 1fr 280px 1fr; gap:28px; align-items:start; }
+  @media (max-width: 1060px) { main { grid-template-columns:1fr; justify-items:center; } .channel { width:100%; max-width:390px; } }
+
+  .side { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .who { font-weight:600; font-size:17px; }
+  .private { width:100%; max-width:390px; font-size:12.5px; color:var(--sub); background:#fff;
+             border:1px solid var(--line); border-radius:14px; padding:10px 12px; }
   .private b { color:var(--ink); }
-  .feed { flex:1; padding:8px 14px 16px; display:flex; flex-direction:column; gap:8px; overflow:auto; }
-  .bubble { max-width:85%; padding:9px 13px; border-radius:18px; animation:pop .25s ease; }
-  .out { align-self:flex-end; background:var(--blue); color:#fff; }
-  .in { align-self:flex-start; background:var(--gray); }
-  .meta { font-size:11px; opacity:.7; display:block; margin-top:2px; }
-  .blockedmsg { align-self:flex-end; background:#fff; border:1.5px dashed var(--bad); color:var(--bad);
-                text-decoration:line-through; }
-  .note { align-self:stretch; background:var(--warnbg); color:var(--warn); border-radius:12px;
-          padding:9px 12px; font-size:13.5px; animation:pop .25s ease; }
-  .confirm { align-self:stretch; border:1.5px solid var(--ink); border-radius:14px; padding:12px;
-             animation:pop .25s ease; }
-  .confirm .q { margin-bottom:10px; }
-  .confirm button { margin-right:8px; padding:8px 14px; }
-  .yes { background:var(--ok); color:#fff; } .no { background:#fff; border:1px solid var(--line); }
-  .gate .feed { gap:6px; }
-  .g { font-size:12.5px; padding:7px 10px; border-radius:10px; animation:pop .25s ease; }
-  .g.pass { background:#eef7f0; color:var(--ok); }
-  .g.block { background:#ffebe9; color:var(--bad); font-weight:600; }
-  .result { margin:0 32px; padding:14px 18px; border-radius:16px; background:#fff; display:none;
-            box-shadow:0 8px 24px rgba(0,0,0,.06); }
-  @keyframes pop { from { transform:translateY(6px); opacity:0 } to { transform:none; opacity:1 } }
+
+  /* Phone */
+  .phone { width:390px; max-width:100%; height:760px; background:var(--phone); border-radius:54px;
+           border:12px solid #111; box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 2px #2a2a2c;
+           display:flex; flex-direction:column; overflow:hidden; position:relative; color:var(--text); }
+  .status { height:44px; display:flex; justify-content:space-between; align-items:center; padding:0 26px 0 32px;
+            font-weight:600; font-size:15px; background:var(--bar); }
+  .status .icons { display:flex; gap:6px; align-items:center; }
+  .bars { display:flex; gap:2px; align-items:flex-end; } .bars i { width:3px; background:#fff; border-radius:1px; display:block; }
+  .batt { width:24px; height:11px; border:1.5px solid #9a9a9e; border-radius:3px; padding:1px; }
+  .batt i { display:block; height:100%; width:80%; background:#fff; border-radius:1px; }
+  .nav { background:var(--bar); display:flex; flex-direction:column; align-items:center; padding:2px 0 10px;
+         border-bottom:1px solid #2c2c2e; position:relative; }
+  .nav .back { position:absolute; left:14px; top:14px; color:var(--me); font-size:26px; line-height:1; }
+  .avatar { width:52px; height:52px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:20px;
+            background:linear-gradient(180deg,#8b8f9c,#666a76); }
+  .nav .name { font-size:12.5px; margin-top:4px; }
+  .nav .name span { color:var(--muted); }
+
+  .thread { flex:1; overflow-y:auto; padding:12px 12px 8px; display:flex; flex-direction:column; gap:4px; scroll-behavior:smooth; }
+  .stamp { text-align:center; color:var(--muted); font-size:11.5px; margin:4px 0 8px; }
+  .msg { max-width:78%; padding:8px 13px; border-radius:19px; font-size:15px; line-height:1.3; word-wrap:break-word;
+         animation:pop .28s cubic-bezier(.2,.9,.3,1.2); }
+  .msg.agent { align-self:flex-start; background:var(--agent); border-bottom-left-radius:6px; }
+  .msg.me { align-self:flex-end; background:var(--me); border-bottom-right-radius:6px; }
+  .msg + .msg.agent, .msg + .msg.me { margin-top:2px; }
+  .msg.alert { box-shadow:inset 3px 0 0 var(--warn); }
+  .msg.shield { box-shadow:inset 3px 0 0 var(--bad); }
+  .msg.final { box-shadow:inset 3px 0 0 var(--ok); }
+  .note { align-self:center; text-align:center; color:var(--muted); font-size:11.5px; max-width:90%; margin:4px 0;
+          animation:pop .28s ease; }
+  .read { align-self:flex-end; color:var(--muted); font-size:11px; margin:1px 4px 4px; }
+  .typing { align-self:flex-start; background:var(--agent); border-radius:19px; padding:12px 14px; display:flex; gap:5px; }
+  .typing i { width:8px; height:8px; border-radius:50%; background:#8e8e93; animation:blink 1.2s infinite; display:block; }
+  .typing i:nth-child(2) { animation-delay:.2s } .typing i:nth-child(3) { animation-delay:.4s }
+
+  .chips { display:flex; gap:8px; justify-content:flex-end; padding:6px 12px 4px; min-height:0; }
+  .chips button { font:inherit; font-size:15px; border-radius:999px; padding:7px 16px; cursor:pointer;
+                  background:transparent; color:var(--me); border:1.5px solid var(--me); animation:pop .25s ease; }
+  .chips button.no { color:#fff; border-color:#48484a; }
+  .compose { display:flex; align-items:center; gap:8px; padding:6px 12px 10px; background:var(--phone); }
+  .compose .plus { width:32px; height:32px; border-radius:50%; background:#2c2c2e; display:grid; place-items:center;
+                   color:#8e8e93; font-size:20px; }
+  .compose .field { flex:1; border:1px solid #3a3a3c; border-radius:18px; padding:7px 14px; color:#5a5a5e; font-size:15px; }
+  .homebar { height:22px; display:grid; place-items:center; } .homebar i { width:130px; height:5px; border-radius:3px; background:#fff; display:block; }
+
+  /* Agent-to-agent channel */
+  .channel { background:#fff; border-radius:22px; border:1px solid var(--line); box-shadow:0 12px 30px rgba(0,0,0,.06);
+             padding:16px 14px; max-height:760px; display:flex; flex-direction:column; }
+  .channel h2 { margin:0 0 4px; font-size:16px; }
+  .channel p { margin:0 0 10px; font-size:12.5px; color:var(--sub); }
+  .log { overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+  .g { font-size:12px; padding:7px 9px; border-radius:10px; animation:pop .25s ease; }
+  .g.pass { background:#eef7f0; color:#1f883d; }
+  .g.block { background:#ffebe9; color:#cf222e; font-weight:600; }
+  .g code { font-size:11px; opacity:.85; display:block; margin-top:2px; word-break:break-all; }
+
+  @keyframes pop { from { transform:translateY(8px) scale(.97); opacity:0 } to { transform:none; opacity:1 } }
+  @keyframes blink { 0%,60%,100% { opacity:.35 } 30% { opacity:1 } }
 </style>
 </head>
 <body>
 <header>
   <h1>Spring Sync</h1>
-  <div class="tag">Two students' agents find a shared spring section and study time. Private details never cross the gate.</div>
+  <div class="tag">Text your agent. It finds a section and study time with your friend's agent, without sharing anything private.</div>
   <div class="controls">
     <button class="primary" onclick="start(false)">Run negotiation</button>
     <button class="ghost" onclick="start(true)">Run with an adversarial agent</button>
+    <span class="result" id="result"></span>
   </div>
 </header>
-<div class="result" id="result"></div>
+
 <main>
-  <section class="col"><h2>Alex's agent</h2><div class="private" id="p-alex"></div><div class="feed" id="f-alex"></div></section>
-  <section class="col gate"><h2>Disclosure gate</h2><div class="private">Only section IDs, study times, free blocks and yes/no fields can cross. Every block is logged.</div><div class="feed" id="f-gate"></div></section>
-  <section class="col"><h2>Jordan's agent</h2><div class="private" id="p-jordan"></div><div class="feed" id="f-jordan"></div></section>
+  <div class="side">
+    <div class="who">Alex</div>
+    <div class="phone" id="phone-alex"></div>
+    <div class="private" id="p-alex"></div>
+  </div>
+  <section class="channel">
+    <h2>Agent-to-agent channel</h2>
+    <p>Everything the two agents send passes through the disclosure gate. Only section IDs, study times, open hours and yes/no fields can cross.</p>
+    <div class="log" id="log"></div>
+  </section>
+  <div class="side">
+    <div class="who">Jordan</div>
+    <div class="phone" id="phone-jordan"></div>
+    <div class="private" id="p-jordan"></div>
+  </div>
 </main>
+
 <script>
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const other = s => s === "alex" ? "jordan" : "alex";
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const IDS = ["alex", "jordan"];
+let busy = false, runId = 0;
 
-function add(feedId, cls, html) {
+function phoneHTML(owner) {
+  return `
+    <div class="status"><span>3:05</span><span class="icons">
+      <span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+      <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.1 0 4 .8 5.4 2.1l1.1-1.1C12.3 1.6 10 .6 7.5.6S2.7 1.6 1 3.2l1.1 1.1C3.5 3 5.4 2.2 7.5 2.2zm0 3.1c1.2 0 2.3.5 3.2 1.2l1.1-1.1C10.6 4.3 9.1 3.7 7.5 3.7s-3.1.6-4.3 1.7l1.1 1.1c.9-.7 2-1.2 3.2-1.2zm0 3.1c-.6 0-1.1.2-1.5.6l1.5 1.5L9 8.9c-.4-.4-.9-.5-1.5-.5z" fill="#fff"/></svg>
+      <span class="batt"><i></i></span></span></div>
+    <div class="nav"><span class="back">‹</span><div class="avatar">SS</div>
+      <div class="name">Spring Sync <span>›</span></div></div>
+    <div class="thread" id="t-${owner}"><div class="stamp">iMessage<br>Today 3:05 PM</div></div>
+    <div class="chips" id="c-${owner}"></div>
+    <div class="compose"><div class="plus">+</div><div class="field">iMessage</div></div>
+    <div class="homebar"><i></i></div>`;
+}
+
+function scroll(owner) { const t = $("t-" + owner); t.scrollTop = t.scrollHeight; }
+
+function addEl(owner, cls, html) {
   const el = document.createElement("div");
   el.className = cls; el.innerHTML = html;
-  $(feedId).appendChild(el); $(feedId).scrollTop = 1e9;
+  $("t-" + owner).appendChild(el); scroll(owner);
   return el;
 }
 
-function showPrivate(p) {
-  for (const id of ["alex", "jordan"]) {
-    const priv = p[id].private;
-    $("p-" + id).innerHTML = "<b>Private to " + esc(p[id].name) + ":</b> " +
-      Object.entries(priv).map(([k, v]) => esc(k) + " = " + esc(typeof v === "object" ? JSON.stringify(v) : v)).join(" · ");
-  }
+function clearRead(owner) { $("t-" + owner).querySelectorAll(".read").forEach(e => e.remove()); }
+
+function studentSays(owner, text) {
+  clearRead(owner);
+  addEl(owner, "msg me", esc(text));
+  addEl(owner, "read", "Delivered");
 }
 
-async function render(events) {
+async function agentSays(owner, text, myRun) {
+  if (!text) return;
+  if (text.startsWith("(demo)")) { addEl(owner, "note", esc(text)); return; }
+  const dots = addEl(owner, "typing", "<i></i><i></i><i></i>");
+  await sleep(520);
+  dots.remove();
+  if (myRun !== runId) return;
+  $("t-" + owner).querySelectorAll(".read").forEach(e => e.textContent = "Read 3:05 PM");
+  let cls = "msg agent";
+  if (text.startsWith("⚑")) { cls += " alert"; text = text.slice(1).trim(); }
+  else if (text.startsWith("🛡")) { cls += " shield"; text = text.slice(2).trim(); }
+  else if (text.startsWith("All set")) cls += " final";
+  addEl(owner, cls, esc(text));
+}
+
+function logEvent(ev) {
+  const log = $("log");
+  const el = document.createElement("div");
+  if (ev.kind === "message") {
+    el.className = "g pass";
+    const p = Object.assign({}, ev.payload);
+    if (Array.isArray(p.blocks)) p.blocks = p.blocks.length + " open one-hour blocks (times only)";
+    el.innerHTML = "✓ " + esc(ev.type) + " · " + esc(ev.from) + " → " + esc(ev.to) +
+      (Object.keys(p).length ? "<code>" + esc(JSON.stringify(p)) + "</code>" : "");
+  } else if (ev.kind === "blocked") {
+    el.className = "g block";
+    el.innerHTML = "✗ Blocked " + esc(ev.attempted.type) + " from " + esc(ev.attempted.from) +
+      "<code>" + esc(ev.reason) + "</code>";
+  } else return;
+  log.appendChild(el); log.scrollTop = log.scrollHeight;
+}
+
+function showChips(owner) {
+  const c = $("c-" + owner);
+  c.innerHTML = '<button class="no">No</button><button class="yes">Yes</button>';
+  c.querySelector(".yes").onclick = () => answer(owner, true);
+  c.querySelector(".no").onclick = () => answer(owner, false);
+  scroll(owner);
+}
+
+async function render(events, myRun) {
   for (const ev of events) {
-    await sleep(450);
-    if (ev.kind === "message") {
-      const label = esc(ev.type) + (Object.keys(ev.payload).length ? " " + esc(JSON.stringify(ev.payload)) : "");
-      add("f-" + ev.from, "bubble out", esc(ev.text || ev.type) + '<span class="meta">' + label + "</span>");
-      add("f-" + ev.to, "bubble in", esc(ev.text || ev.type) + '<span class="meta">' + label + "</span>");
-      add("f-gate", "g pass", "✓ " + esc(ev.type) + " " + esc(ev.from) + " → " + esc(ev.to));
-    } else if (ev.kind === "blocked") {
-      const a = ev.attempted;
-      add("f-" + a.from, "bubble blockedmsg", esc(a.text || a.type) + '<span class="meta">' + esc(JSON.stringify(a.payload)) + "</span>");
-      add("f-gate", "g block", "✗ blocked " + esc(a.type) + " from " + esc(a.from) + ": " + esc(ev.reason));
-    } else if (ev.kind === "escalation") {
-      add("f-" + ev.student, "note", "⚑ Asks you: " + esc(ev.question));
-    } else if (ev.kind === "confirm_request") {
-      const box = add("f-" + ev.student, "confirm",
-        '<div class="q">' + esc(ev.question) + '</div><button class="yes">Yes</button><button class="no">No</button>');
-      box.querySelector(".yes").onclick = () => answer(box, true);
-      box.querySelector(".no").onclick = () => answer(box, false);
-    } else if (ev.kind === "done") {
-      const r = $("result"); r.style.display = "block";
-      const blk = ev.study_block ? ev.study_block.day + " " + ev.study_block.start + "-" + ev.study_block.end : "none";
-      r.innerHTML = "<b>Result:</b> " + esc(ev.status) + (ev.section ? " · section " + esc(ev.section) + " · study block " + esc(blk) : "");
+    if (myRun !== runId) return;
+    logEvent(ev);
+    const lines = IDS.map(id => [id, ev.say && ev.say[id]]).filter(([, t]) => t);
+    await Promise.all(lines.map(([id, t]) => agentSays(id, t, myRun)));
+    if (ev.kind === "confirm_request") showChips(ev.student);
+    if (ev.kind === "done") {
+      $("result").textContent = ev.status === "agreed"
+        ? "Result: " + ev.section + (ev.study_block ? " · study " + ev.study_block.day + " " + ev.study_block.start + "-" + ev.study_block.end : "")
+        : "Result: " + ev.status;
     }
+    await sleep(260);
   }
 }
 
-async function answer(box, yes) {
-  box.querySelectorAll("button").forEach(b => b.disabled = true);
-  box.querySelector(".q").innerHTML += " <b>" + (yes ? "Yes" : "No") + "</b>";
+async function answer(owner, yes) {
+  if (busy) return;
+  busy = true;
+  $("c-" + owner).innerHTML = "";
+  studentSays(owner, yes ? "Yes" : "No");
+  const myRun = runId;
   const res = await fetch("/api/answer", {method: "POST", body: JSON.stringify({yes})}).then(r => r.json());
-  await render(res.events || []);
+  await render(res.events || [], myRun);
+  busy = false;
 }
 
 async function start(adversary) {
-  for (const id of ["f-alex", "f-gate", "f-jordan"]) $(id).innerHTML = "";
-  $("result").style.display = "none";
+  runId += 1; const myRun = runId; busy = true;
+  for (const id of IDS) { $("phone-" + id).innerHTML = phoneHTML(id); }
+  $("log").innerHTML = ""; $("result").textContent = "";
+  studentSays("alex", "Find a CSE 340 section I can take with Jordan next spring" +
+                      (adversary ? "" : ""));
+  await sleep(500);
   const res = await fetch("/api/start", {method: "POST", body: JSON.stringify({adversary})}).then(r => r.json());
-  showPrivate(res.profiles);
-  await render(res.events);
+  for (const id of IDS) {
+    const p = res.profiles[id];
+    $("p-" + id).innerHTML = "<b>Private to " + esc(p.name) + " (demo profile):</b> " +
+      Object.entries(p.private).map(([k, v]) => esc(k.replace(/_/g, " ")) + ": " +
+        esc(Array.isArray(v) ? v.join(", ") : typeof v === "object" ? Object.entries(v).map(([a, b]) => a + " " + b).join(", ") : v)).join(" · ");
+  }
+  if (adversary) addEl("jordan", "note", "(demo) Jordan's agent is set to probe for Alex's private data");
+  await render(res.events, myRun);
+  busy = false;
 }
+
+for (const id of IDS) $("phone-" + id).innerHTML = phoneHTML(id);
 </script>
 </body>
 </html>

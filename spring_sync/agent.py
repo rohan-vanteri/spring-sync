@@ -4,6 +4,9 @@ constraint on its own."""
 
 from .gate import ALLOWED, SHAREABLE_FIELDS
 
+FIELD_LABELS = {"gpa": "GPA", "scholarship": "scholarship", "grades": "grades",
+                "academic_standing": "academic standing"}
+
 
 def mins(hhmm):
     h, m = hhmm.split(":")
@@ -93,5 +96,6 @@ class StudentAgent:
                             "That's already part of our proposals."), None
         escalation = {"kind": "escalation", "student": self.id,
                       "question": "The other agent asked for your %s. I didn't share it. "
-                                  "Nothing to do unless you want to tell them yourself." % field}
+                                  "Nothing to do unless you want to tell them yourself."
+                                  % FIELD_LABELS.get(field, field.replace("_", " "))}
         return self.msg(to, "REFUSE", {"field": field}, "I can't share that."), escalation

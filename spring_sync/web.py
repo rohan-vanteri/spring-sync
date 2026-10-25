@@ -1,5 +1,6 @@
-"""Local web demo: Alex's agent, the disclosure gate, and Jordan's agent side by
-side. Each student confirms with Yes/No buttons.
+"""Local web demo in a Messages style: Alex and Jordan each text their own
+Spring Sync agent on their own phone; the agent-to-agent channel (the gate) is
+shown between them. Each student answers with Yes/No reply chips.
 
 Usage: python -m spring_sync.web  (then open http://localhost:8765)
 """
@@ -9,6 +10,7 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .data import ALEX, DEMO_PROBES, JORDAN
+from .narrate import narrate
 from .session import Session
 
 PORT = int(os.environ.get("PORT", "8765"))
@@ -31,6 +33,9 @@ def advance(answer=None, first=False):
     except StopIteration:
         pass
     STATE["pending"] = events[-1] if events and events[-1]["kind"] == "confirm_request" else None
+    names = {"alex": ALEX["name"], "jordan": JORDAN["name"]}
+    for ev in events:
+        ev["say"] = {sid: narrate(ev, sid, names) for sid in names}
     return events
 
 
