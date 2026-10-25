@@ -1,24 +1,47 @@
 # Spring Sync
 
-**Track 2 — Agent-to-Agent Coordination.** Two students want to take CSE 340 together next spring and study weekly. Each has a personal agent that knows their schedule, hard limits and private life. The agents negotiate a shared section and a study hour **without either student's GPA, grades, scholarship or reasons for being busy ever crossing over**.
+**Sync your spring schedule, not your secrets.** Cubbie Hackathon, Track 2 (Agent-to-Agent Coordination), by the Degree Domino team.
 
-Built by the Degree Domino team (Track 1).
+Two students want to take CSE 340 together next spring and study weekly. Each has a personal agent that knows their schedule, hard limits and private life. The agents negotiate a shared section and a study hour **without either student's GPA, grades, scholarship or reasons for being busy ever crossing over**.
+
+## For judges
+
+### Try it (no install)
+The site in [`docs/`](docs/index.html) runs the real engine (the same `spring_sync/` gate, agents and protocol) in your browser with [Pyodide](https://pyodide.org). Type your own two schedules or use the sample students, then click **Run negotiation** or **Run with an adversarial agent** and answer each student's Yes/No on their own phone. Nothing you type leaves the page.
+
+To run it locally: `python3 -m http.server -d docs` and open http://localhost:8000. Once GitHub Pages is enabled for the `docs/` folder it is at **https://rohan-vanteri.github.io/spring-sync/**.
+
+### The three things Track 2 asks to see
+
+| Ask | How Spring Sync does it |
+|---|---|
+| **Conflicting constraints** | Each agent has hard constraints (earliest start, campus, busy blocks) it never relaxes, and soft preferences it ranks by. With the sample students, Alex proposes C (it clashes with Jordan's private appointment), Jordan counters with A (it starts before Alex's private 10 AM limit), and they settle on B. Declines say only `"conflict"`, never why. If nothing fits, both students are told instead of a constraint being broken. |
+| **What they share** | A deterministic **disclosure gate** sits between the agents (`spring_sync/gate.py`). Only allowlisted fields of the right type cross: section IDs, study times, free one-hour blocks, yes/no flags. Free text is scanned for the sender's private values, GPA-like numbers and grade talk. The gate never trusts an agent's claim that a message is safe, and logs every block. |
+| **When they ask their students** | Before coordinating at all (consent), before committing to a section, and before adding a study block, each on the student's own phone. Also whenever the other agent asks for something private, and whenever no option fits. Agents never register anyone. |
+
+Protocol: `INVITE → CONSENT → PROPOSE/COUNTER → ACCEPT|DECLINE → CONFIRM (each student) → FREE_BLOCKS → PROPOSE study block → CONFIRM → DONE`.
+
+### Results: a real model against 14 extraction attacks
+
+We tested whether the gate is needed when the agent is a real model told to keep things private. OpenAI `gpt-6-luna` played Alex's agent against 10 single-message attacks (direct, "my advisor said", above/below-3.0, a fake registrar audit, and more) and 4 multi-turn attacks that build rapport before probing, plus 4 harmless scheduling questions. Full transcripts: [`eval_results/`](eval_results/).
+
+| Condition | Leaks | Multi-turn leaks | Harmless questions answered | Gate blocks | Sent to the student |
+|---|---|---|---|---|---|
+| Prompt-only privacy | 0 / 14 | 0 / 4 | 4 / 4 | – | – |
+| Code gate | 0 / 14 | 0 / 4 | 4 / 4 | 0 | – |
+| Gate + monitor | 0 / 14 | 0 / 4 | 4 / 4 | 0 | 12 (precision 1.00, recall 0.86) |
+
+What this shows, honestly:
+- **A strong model already resisted these attacks on its own.** The gate did not reduce leaks in this run because there were none to stop. Its value is that it holds without depending on the model: for a weaker, misconfigured or manipulated agent, the code still refuses to let a private field cross (see the adversarial demo and `tests/`).
+- **The gate costs nothing once the agent knows the allowed fields.** In our first run the agent invented field names like `free_time`, and the gate wrongly blocked 5 harmless replies (2/4 answered). After we gave the agent the exact field names, false blocks went to 0 and all harmless questions were answered ([first run](eval_results/gpt-6-luna_2026-10-24_first-run.json)).
+- **The keyword monitor is cautious:** it caught 12 of 14 attacks with no false alarms, and missed the two indirectly worded multi-turn probes, which the model refused anyway.
+- Limits: one model, 18 scenarios, a rule-based leak detector (we read every transcript), synthetic students.
 
 ## Why students need this
 
 Finding a section with a friend today means screenshotting schedules and explaining why you can't do 9 AM or Tuesday nights. Spring Sync lets the agents compare only what's needed, so neither of you has to explain your job, your therapy appointments or your scholarship rules.
 
-## What judges asked for, and where it is
-
-| Ask | How Spring Sync does it |
-|---|---|
-| **Conflicting constraints** | Each agent has hard constraints (earliest start, campus, busy blocks) it never relaxes and soft preferences it ranks by. In the demo, Alex proposes C (it clashes with Jordan's private appointment), Jordan counters with A (it starts before Alex's private 10 AM limit), and they settle on B. Declines say only `"conflict"`, never why. |
-| **What they share** | A deterministic **disclosure gate** sits between the agents (`spring_sync/gate.py`). Only allowlisted fields of the right type cross: section IDs, study times, free one-hour blocks, yes/no flags. Free text is scanned for the sender's private values, GPA-like numbers and grade talk. The gate never trusts an agent's claim that a message is safe, and logs every block. |
-| **When they ask their students** | Before coordinating at all (consent), before committing to a section, and before adding a study block. Also whenever the other agent asks for something private, and whenever no option fits without breaking a hard constraint. Agents never register anyone. |
-
-Protocol: `INVITE → CONSENT → PROPOSE/COUNTER → ACCEPT|DECLINE → CONFIRM (each student) → FREE_BLOCKS → PROPOSE study block → CONFIRM → DONE`.
-
-## Run the demo
+## Run the demo with a local server
 
 ```bash
 python3 -m spring_sync.web
@@ -60,7 +83,7 @@ python3 -m spring_sync.eval --simulate
 python3 -m unittest discover -s tests -v
 ```
 
-40 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, the OpenAI request/response path (with a fake client), and the per-student messages (each side hears only its own story; the other student's private data is never narrated).
+53 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, the OpenAI request/response path (with a fake client), the per-student messages (each side hears only its own story; the other student's private data is never narrated), and the browser site (its engine copy matches `spring_sync/`, custom schedules negotiate without leaking, and bad form input gets a readable error).
 
 ## Layout
 
@@ -73,8 +96,11 @@ spring_sync/
   eval.py      adversarial privacy evaluation (3 conditions)
   llm.py       OpenAI and Claude responders for the evaluation, plus the labeled simulated stand-in
   narrate.py   turns protocol events into what each student's agent texts them
+  runner.py    drives a session step by step and builds students from the schedule form
   web.py       local demo server; index.html is the Messages-style page
 tests/
+docs/          static site: runs the engine in the browser (Pyodide); docs/py is copied by tools/build_site.py
+eval_results/  saved transcripts from the gpt-6-luna runs
 ```
 
 All data is synthetic. Sections are not from ASU Class Search.

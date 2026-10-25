@@ -9,34 +9,12 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .data import ALEX, DEMO_PROBES, JORDAN
-from .narrate import narrate
-from .session import Session
+from .data import ALEX, JORDAN
+from .runner import Runner
 
 PORT = int(os.environ.get("PORT", "8765"))
-PROBES = DEMO_PROBES
 
-STATE = {"gen": None, "session": None, "pending": None}
-
-
-def advance(answer=None, first=False):
-    """Run the session until the next confirmation or the end; return new events."""
-    gen = STATE["gen"]
-    events = []
-    try:
-        ev = next(gen) if first else gen.send(answer)
-        while True:
-            events.append(ev)
-            if ev["kind"] in ("confirm_request", "done"):
-                break
-            ev = next(gen)
-    except StopIteration:
-        pass
-    STATE["pending"] = events[-1] if events and events[-1]["kind"] == "confirm_request" else None
-    names = {"alex": ALEX["name"], "jordan": JORDAN["name"]}
-    for ev in events:
-        ev["say"] = {sid: narrate(ev, sid, names) for sid in names}
-    return events
+STATE = {"runner": None}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -64,16 +42,16 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         data = json.loads(self.rfile.read(length) or b"{}")
         if self.path == "/api/start":
-            s = Session(ALEX, JORDAN, adversary=PROBES if data.get("adversary") else None)
-            STATE.update(session=s, gen=s.run())
-            self._json({"events": advance(first=True), "profiles": {
+            STATE["runner"] = Runner(ALEX, JORDAN, adversary=bool(data.get("adversary")))
+            self._json({"events": STATE["runner"].start(), "profiles": {
                 "alex": {"name": ALEX["name"], "private": ALEX["private"]},
                 "jordan": {"name": JORDAN["name"], "private": JORDAN["private"]}}})
         elif self.path == "/api/answer":
-            if not STATE["pending"]:
+            runner = STATE["runner"]
+            if not runner or not runner.pending:
                 self._json({"error": "nothing to confirm"}, 400)
                 return
-            self._json({"events": advance(answer=bool(data.get("yes")))})
+            self._json({"events": runner.answer(data.get("yes"))})
         else:
             self.send_error(404)
 
