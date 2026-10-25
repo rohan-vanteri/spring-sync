@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spring Sync</title>
+<style>
+  :root { --bg:#f4f3f0; --card:#fff; --ink:#121212; --sub:#767676; --blue:#0a84ff; --gray:#e9e9eb;
+          --ok:#1f883d; --bad:#cf222e; --warn:#9a6700; --warnbg:#fff8c5; --line:#e2e0da; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
+  header { padding:28px 32px 12px; }
+  h1 { margin:0; font-size:44px; letter-spacing:-0.02em; }
+  .tag { color:var(--sub); margin-top:4px; }
+  .controls { margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
+  button { font:inherit; border:0; border-radius:12px; padding:10px 16px; cursor:pointer; }
+  .primary { background:var(--ink); color:#fff; }
+  .ghost { background:#fff; border:1px solid var(--line); }
+  main { display:grid; grid-template-columns: 1fr 300px 1fr; gap:18px; padding:16px 32px 40px; }
+  @media (max-width: 980px) { main { grid-template-columns:1fr; } }
+  .col { background:var(--card); border-radius:22px; box-shadow:0 12px 40px rgba(0,0,0,.08);
+         display:flex; flex-direction:column; min-height:560px; overflow:hidden; }
+  .col h2 { margin:0; font-size:17px; padding:16px 18px 6px; }
+  .private { margin:0 18px 10px; padding:10px 12px; border-radius:12px; background:#f6f6f6;
+             font-size:12.5px; color:var(--sub); }
+  .private b { color:var(--ink); }
+  .feed { flex:1; padding:8px 14px 16px; display:flex; flex-direction:column; gap:8px; overflow:auto; }
+  .bubble { max-width:85%; padding:9px 13px; border-radius:18px; animation:pop .25s ease; }
+  .out { align-self:flex-end; background:var(--blue); color:#fff; }
+  .in { align-self:flex-start; background:var(--gray); }
+  .meta { font-size:11px; opacity:.7; display:block; margin-top:2px; }
+  .blockedmsg { align-self:flex-end; background:#fff; border:1.5px dashed var(--bad); color:var(--bad);
+                text-decoration:line-through; }
+  .note { align-self:stretch; background:var(--warnbg); color:var(--warn); border-radius:12px;
+          padding:9px 12px; font-size:13.5px; animation:pop .25s ease; }
+  .confirm { align-self:stretch; border:1.5px solid var(--ink); border-radius:14px; padding:12px;
+             animation:pop .25s ease; }
+  .confirm .q { margin-bottom:10px; }
+  .confirm button { margin-right:8px; padding:8px 14px; }
+  .yes { background:var(--ok); color:#fff; } .no { background:#fff; border:1px solid var(--line); }
+  .gate .feed { gap:6px; }
+  .g { font-size:12.5px; padding:7px 10px; border-radius:10px; animation:pop .25s ease; }
+  .g.pass { background:#eef7f0; color:var(--ok); }
+  .g.block { background:#ffebe9; color:var(--bad); font-weight:600; }
+  .result { margin:0 32px; padding:14px 18px; border-radius:16px; background:#fff; display:none;
+            box-shadow:0 8px 24px rgba(0,0,0,.06); }
+  @keyframes pop { from { transform:translateY(6px); opacity:0 } to { transform:none; opacity:1 } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Spring Sync</h1>
+  <div class="tag">Two students' agents find a shared spring section and study time. Private details never cross the gate.</div>
+  <div class="controls">
+    <button class="primary" onclick="start(false)">Run negotiation</button>
+    <button class="ghost" onclick="start(true)">Run with an adversarial agent</button>
+  </div>
+</header>
+<div class="result" id="result"></div>
+<main>
+  <section class="col"><h2>Alex's agent</h2><div class="private" id="p-alex"></div><div class="feed" id="f-alex"></div></section>
+  <section class="col gate"><h2>Disclosure gate</h2><div class="private">Only section IDs, study times, free blocks and yes/no fields can cross. Every block is logged.</div><div class="feed" id="f-gate"></div></section>
+  <section class="col"><h2>Jordan's agent</h2><div class="private" id="p-jordan"></div><div class="feed" id="f-jordan"></div></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const other = s => s === "alex" ? "jordan" : "alex";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function add(feedId, cls, html) {
+  const el = document.createElement("div");
+  el.className = cls; el.innerHTML = html;
+  $(feedId).appendChild(el); $(feedId).scrollTop = 1e9;
+  return el;
+}
+
+function showPrivate(p) {
+  for (const id of ["alex", "jordan"]) {
+    const priv = p[id].private;
+    $("p-" + id).innerHTML = "<b>Private to " + esc(p[id].name) + ":</b> " +
+      Object.entries(priv).map(([k, v]) => esc(k) + " = " + esc(typeof v === "object" ? JSON.stringify(v) : v)).join(" · ");
+  }
+}
+
+async function render(events) {
+  for (const ev of events) {
+    await sleep(450);
+    if (ev.kind === "message") {
+      const label = esc(ev.type) + (Object.keys(ev.payload).length ? " " + esc(JSON.stringify(ev.payload)) : "");
+      add("f-" + ev.from, "bubble out", esc(ev.text || ev.type) + '<span class="meta">' + label + "</span>");
+      add("f-" + ev.to, "bubble in", esc(ev.text || ev.type) + '<span class="meta">' + label + "</span>");
+      add("f-gate", "g pass", "✓ " + esc(ev.type) + " " + esc(ev.from) + " → " + esc(ev.to));
+    } else if (ev.kind === "blocked") {
+      const a = ev.attempted;
+      add("f-" + a.from, "bubble blockedmsg", esc(a.text || a.type) + '<span class="meta">' + esc(JSON.stringify(a.payload)) + "</span>");
+      add("f-gate", "g block", "✗ blocked " + esc(a.type) + " from " + esc(a.from) + ": " + esc(ev.reason));
+    } else if (ev.kind === "escalation") {
+      add("f-" + ev.student, "note", "⚑ Asks you: " + esc(ev.question));
+    } else if (ev.kind === "confirm_request") {
+      const box = add("f-" + ev.student, "confirm",
+        '<div class="q">' + esc(ev.question) + '</div><button class="yes">Yes</button><button class="no">No</button>');
+      box.querySelector(".yes").onclick = () => answer(box, true);
+      box.querySelector(".no").onclick = () => answer(box, false);
+    } else if (ev.kind === "done") {
+      const r = $("result"); r.style.display = "block";
+      const blk = ev.study_block ? ev.study_block.day + " " + ev.study_block.start + "-" + ev.study_block.end : "none";
+      r.innerHTML = "<b>Result:</b> " + esc(ev.status) + (ev.section ? " · section " + esc(ev.section) + " · study block " + esc(blk) : "");
+    }
+  }
+}
+
+async function answer(box, yes) {
+  box.querySelectorAll("button").forEach(b => b.disabled = true);
+  box.querySelector(".q").innerHTML += " <b>" + (yes ? "Yes" : "No") + "</b>";
+  const res = await fetch("/api/answer", {method: "POST", body: JSON.stringify({yes})}).then(r => r.json());
+  await render(res.events || []);
+}
+
+async function start(adversary) {
+  for (const id of ["f-alex", "f-gate", "f-jordan"]) $(id).innerHTML = "";
+  $("result").style.display = "none";
+  const res = await fetch("/api/start", {method: "POST", body: JSON.stringify({adversary})}).then(r => r.json());
+  showPrivate(res.profiles);
+  await render(res.events);
+}
+</script>
+</body>
+</html>
