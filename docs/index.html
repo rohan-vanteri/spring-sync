@@ -319,11 +319,12 @@
         <h2 class="section">Two phones, one plan, zero secrets.</h2>
         <p class="lead" style="margin-bottom:6px">One real run, both sides at once: Alex's phone on the left, Jordan's on the right, and every message the gate let through or stopped. Tap a moment to jump to it.</p>
         <ul class="beats">
-          <li><span class="t" style="background:var(--blue)" data-seek="4">0:04</span><div><b>Alex asks, Jordan agrees</b><small>Each phone only shows its own side of the conversation.</small></div></li>
-          <li><span class="t" style="background:var(--red)" data-seek="19">0:19</span><div><b>A nosy agent asks for Alex's GPA</b><small>Refused. Alex is told someone asked. A smuggled scholarship field gets blocked.</small></div></li>
-          <li><span class="t" style="background:var(--indigo)" data-seek="28">0:28</span><div><b>Two sections fall through</b><small>"Doesn't work for me", with no reason given on either side.</small></div></li>
-          <li><span class="t" style="background:var(--purple)" data-seek="41">0:41</span><div><b>Both say yes</b><small>Nothing is planned until each student confirms on their own phone.</small></div></li>
-          <li><span class="t" style="background:var(--green)" data-seek="50">0:50</span><div><b>A study time that fits both</b><small>Shared as open hours only, never what fills the rest of the week.</small></div></li>
+          <li><span class="t" style="background:var(--amber)" data-seek="4">0:04</span><div><b>Describe your week in plain English</b><small>AI fills in the schedule form. The reasons stay with your agent.</small></div></li>
+          <li><span class="t" style="background:var(--blue)" data-seek="12">0:12</span><div><b>Alex asks, Jordan agrees</b><small>AI writes each text. Each phone only shows its own side.</small></div></li>
+          <li><span class="t" style="background:var(--red)" data-seek="26">0:26</span><div><b>A nosy agent asks for Alex's GPA</b><small>Refused. Alex is told someone asked. A smuggled scholarship field gets blocked.</small></div></li>
+          <li><span class="t" style="background:var(--indigo)" data-seek="36">0:36</span><div><b>Two sections fall through</b><small>"Doesn't work for me", with no reason given on either side.</small></div></li>
+          <li><span class="t" style="background:var(--purple)" data-seek="49">0:49</span><div><b>Both say yes</b><small>Nothing is planned until each student confirms on their own phone.</small></div></li>
+          <li><span class="t" style="background:var(--green)" data-seek="59">0:59</span><div><b>A study time that fits both</b><small>Shared as open hours only, never what fills the rest of the week.</small></div></li>
         </ul>
       </div>
     </div>
@@ -427,6 +428,7 @@
     <p class="lead">The things we'd ask too.</p>
     <div class="faq">
       <details><summary>What if my friend's agent is sneaky?</summary><p>It doesn't matter what it asks for. The gate between the agents only lets section IDs, open hours and yes/no answers through, and it checks every message in code. Ask for a GPA and you get "I can't share that". Hide a scholarship field inside a proposal and the whole message is blocked. You're told when someone tries.</p></details>
+      <details><summary>Where does the AI come in?</summary><p>AI reads your week when you describe it in plain English, and it writes every text your agent sends you. It never decides anything: code picks the sections and study times, and the gate checks every message between agents. Each student's texts go to the AI separately, and any AI text that changes a section, time, day, name or refusal is thrown out and replaced with the built-in wording. If you use "describe your week", that sentence is sent to the AI to fill in your form; we don't save it, and it never reaches the other student.</p></details>
       <details><summary>Does it sign me up for classes?</summary><p>No. It finds a section and a study time you both agree to, and you still register yourself. Nothing is planned until each of you says yes on your own phone.</p></details>
       <details><summary>What does my friend actually see?</summary><p>Section IDs, open one-hour blocks, the study time you agree on, and whether a section works for you. Never why: not your job, your appointments, your commute, your grades or your aid.</p></details>
       <details><summary>Why not just text each other?</summary><p>You can, but then "why can't you do Tuesdays?" turns into explaining your life. The agents do the back-and-forth, keep the reasons to themselves, and only bring you a plan to approve.</p></details>
@@ -452,7 +454,7 @@ let py, SAMPLES, ready = false, busy = false, runId = 0, passCount = 0, blockCou
 
 // AI wording comes from our Cloudflare Worker (it holds the OpenAI key; this page never does).
 // If it's missing or slow, everything still works with the built-in wording.
-const AI_URL_DEFAULT = "";
+const AI_URL_DEFAULT = "https://spring-sync-ai.spring-sync.workers.dev";
 const AI_URL = (() => {
   const q = new URLSearchParams(location.search).get("ai");
   return q && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(q) ? q : AI_URL_DEFAULT;

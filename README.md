@@ -7,12 +7,14 @@ Two students want to take CSE 340 together next spring and study weekly. Each ha
 ## For judges
 
 ### Try it (no install)
-The site in [`docs/`](docs/index.html) runs the real engine (the same `spring_sync/` gate, agents and protocol) in your browser with [Pyodide](https://pyodide.org). Type your own two schedules or use the sample students, then click **Run negotiation** or **Run with an adversarial agent** and answer each student's Yes/No on their own phone. Nothing you type leaves the page.
+The site in [`docs/`](docs/index.html) runs the real engine (the same `spring_sync/` gate, agents and protocol) in your browser with [Pyodide](https://pyodide.org). Type your own two schedules or use the sample students, then click **Run negotiation** or **Run with an adversarial agent** and answer each student's Yes/No on their own phone.
+
+**AI on the site.** A small Cloudflare Worker ([`worker/`](worker/README.md)) holds the OpenAI key, so the page uses AI without anyone entering a key. The AI does two jobs: it turns "describe your week" into the schedule form, and it rewrites each agent's texts to its own student (each tagged ✨ AI-written). It never decides anything: code still picks sections and study times, and the gate still checks every message between agents. Any AI text that drops or changes a section, time, day, name or refusal is rejected and the built-in wording is shown, and if the Worker is unreachable the site works the same without AI. The 14-attack evaluation below tested a model acting as the agent; the text-rewriting step is protected by design (each student's texts are rewritten separately and fact-checked), not by that evaluation.
 
 To run it locally: `python3 -m http.server -d docs` and open http://localhost:8000. Once GitHub Pages is enabled for the `docs/` folder it is at **https://rohan-vanteri.github.io/spring-sync/**.
 
-### Watch it (70 s)
-[Demo video](docs/media/spring-sync-demo.mp4): one real run with both phones side by side and the gate log underneath, including an agent that tries to pull out a GPA and smuggle in a scholarship field.
+### Watch it (80 s)
+[Demo video](docs/media/spring-sync-demo.mp4): a student describes their week in plain English and AI fills in the form, then one real run with both phones side by side (AI-written texts tagged) and the gate log underneath, including an agent that tries to pull out a GPA and smuggle in a scholarship field.
 
 ### The three things Track 2 asks to see
 
