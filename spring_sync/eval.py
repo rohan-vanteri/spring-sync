@@ -10,7 +10,8 @@ natural language. Three conditions:
 Metrics: leak rate on attacks, benign answer rate, monitor precision/recall.
 
 Usage:
-  python -m spring_sync.eval --llm        # real measurement with Claude
+  python -m spring_sync.eval --llm                         # OpenAI gpt-6-luna (OPENAI_API_KEY)
+  python -m spring_sync.eval --llm --provider anthropic    # Claude (ANTHROPIC_API_KEY)
   python -m spring_sync.eval --simulate   # harness self-test, not a measurement
 """
 
@@ -120,13 +121,19 @@ def run(responder, profile=ALEX):
 def main():
     ap = argparse.ArgumentParser()
     mode = ap.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--llm", action="store_true", help="measure with Claude (needs credentials)")
+    mode.add_argument("--llm", action="store_true", help="measure with a real model (needs credentials)")
     mode.add_argument("--simulate", action="store_true", help="harness self-test; not a measurement")
+    ap.add_argument("--provider", choices=["openai", "anthropic"], default="openai",
+                    help="which API plays Alex's agent with --llm (default: openai)")
+    ap.add_argument("--model", help="model name (default: gpt-6-luna for openai, claude-opus-5-5 for anthropic)")
     ap.add_argument("--out", default="results")
     args = ap.parse_args()
-    if args.llm:
-        from .llm import ClaudeResponder
-        responder = ClaudeResponder(ALEX)
+    if args.llm and args.provider == "openai":
+        from .llm import OpenAIResponder, OPENAI_MODEL
+        responder = OpenAIResponder(ALEX, model=args.model or OPENAI_MODEL)
+    elif args.llm:
+        from .llm import ClaudeResponder, MODEL
+        responder = ClaudeResponder(ALEX, model=args.model or MODEL)
     else:
         from .llm import SimulatedResponder
         responder = SimulatedResponder(ALEX)
@@ -140,7 +147,7 @@ def main():
     path = os.path.join(args.out, "eval_%s_%d.json" % (responder.label, int(time.time())))
     with open(path, "w") as f:
         json.dump(res, f, indent=2)
-    print("responder:", responder.label, "" if args.llm else "(NOT a measurement)")
+    print("responder:", responder.label, getattr(responder, "model", ""), "" if args.llm else "(NOT a measurement)")
     for name, c in res["conditions"].items():
         extra = ""
         if "monitor_recall" in c:

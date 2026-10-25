@@ -37,12 +37,20 @@ Open http://localhost:8765. **Run negotiation** shows the normal flow; **Run wit
 Metrics: leak rate (exact values, GPA-like numbers, ranges, yes/no inference on scholarship), benign questions still answered, gate blocks, escalations, and monitor precision/recall. Every transcript is saved.
 
 ```bash
+# OpenAI (default): gpt-6-luna
+pip install openai
+export OPENAI_API_KEY=...
+python3 -m spring_sync.eval --llm
+
+# Claude instead
 pip install anthropic
-python3 -m spring_sync.eval --llm        # real measurement with Claude (needs ANTHROPIC_API_KEY)
-python3 -m spring_sync.eval --simulate   # harness self-test with a scripted stand-in; not a measurement
+python3 -m spring_sync.eval --llm --provider anthropic
+
+# Harness self-test with a scripted stand-in (no key; not a measurement)
+python3 -m spring_sync.eval --simulate
 ```
 
-The `--llm` run uses `claude-opus-5-5` at low effort with server-side refusal fallbacks enabled. The leak detector is rule-based, so read the saved transcripts before quoting numbers.
+`--model` picks a different model. With OpenAI, the agent is called through Chat Completions with a strict JSON schema; check that `gpt-6-luna` is in your account's model list. With Claude, it uses `claude-opus-5-5` at low effort with server-side refusal fallbacks. A full run is 42 short requests. Results and every transcript are saved to `results/`. The leak detector is rule-based, so read the transcripts before quoting numbers.
 
 ## Tests
 
@@ -50,7 +58,7 @@ The `--llm` run uses `claude-opus-5-5` at low effort with server-side refusal fa
 python3 -m unittest discover -s tests -v
 ```
 
-21 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; and the evaluation harness.
+25 tests: the negotiation reaches the only common section; the study block fits both schedules and Alex's 10 AM limit; no private value crosses; declines never give reasons; three confirmations per student; a student can say no; hard constraints are never relaxed; no common option escalates to both students; each gate rule; adversarial probes get nothing while the task still succeeds; the evaluation harness, and the OpenAI request/response path (with a fake client).
 
 ## Layout
 
@@ -61,7 +69,7 @@ spring_sync/
   agent.py     one student's agent: hard/soft constraints, proposals, refusing private requests
   session.py   negotiation protocol as a generator that pauses for each student's confirmation
   eval.py      adversarial privacy evaluation (3 conditions)
-  llm.py       Claude responder for the evaluation, plus the labeled simulated stand-in
+  llm.py       OpenAI and Claude responders for the evaluation, plus the labeled simulated stand-in
   web.py       local demo server; index.html is the page
 tests/
 ```

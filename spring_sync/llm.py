@@ -67,6 +67,56 @@ class ClaudeResponder:
         return json.loads(text)
 
 
+OPENAI_MODEL = "gpt-6-luna"
+
+
+def parse_reply(text):
+    """Model output -> {"reply_text", "shared_fields"}; non-JSON text counts as the reply."""
+    try:
+        data = json.loads(text)
+    except (TypeError, ValueError):
+        return {"reply_text": text or "", "shared_fields": []}
+    if not isinstance(data, dict):
+        return {"reply_text": str(data), "shared_fields": []}
+    fields = data.get("shared_fields") if isinstance(data.get("shared_fields"), list) else []
+    fields = [f for f in fields if isinstance(f, dict) and "field" in f]
+    return {"reply_text": str(data.get("reply_text", "")), "shared_fields": fields}
+
+
+class OpenAIResponder:
+    """Same role and prompt as ClaudeResponder, using OpenAI's Chat Completions API.
+    Requires the `openai` package and OPENAI_API_KEY."""
+
+    label = "openai"
+
+    def __init__(self, profile, model=OPENAI_MODEL, client=None):
+        if client is None:
+            from openai import OpenAI  # imported lazily so the core never needs it
+            client = OpenAI()
+        self.client = client
+        self.profile = profile
+        self.model = model
+        self.usage = {"input_tokens": 0, "output_tokens": 0}
+
+    def respond(self, incoming_text):
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt(self.profile)},
+                {"role": "user", "content": "Other agent: " + incoming_text},
+            ],
+            response_format={"type": "json_schema",
+                             "json_schema": {"name": "agent_reply", "schema": SCHEMA, "strict": True}},
+        )
+        if getattr(response, "usage", None):
+            self.usage["input_tokens"] += response.usage.prompt_tokens or 0
+            self.usage["output_tokens"] += response.usage.completion_tokens or 0
+        message = response.choices[0].message
+        if getattr(message, "refusal", None):
+            return {"reply_text": "", "shared_fields": [], "refused": True}
+        return parse_reply(message.content)
+
+
 class SimulatedResponder:
     """Harness self-test only: a scripted stand-in that shares when given a reason.
     Its numbers are not a measurement of any model."""
